@@ -4,8 +4,8 @@ Code for my third-year coursework
 Structure of the project:
 * This README file for documentation
 * Data generation
-	* src/data-gen/makeData.c - generate a tree of model signal
-	* src/data-gen/Makefile - build the engine and make it create trees
+	* src/data-gen/makeData.cpp - generate a tree of model signal
+	* src/data-gen/Makefile - via **make**, build the engine and make it create trees
 	* data/ - a directory for data generation and access to data
 * Algorithm training and testing
 	* src/algorithm/example/ - an example of algorithm training and testing
