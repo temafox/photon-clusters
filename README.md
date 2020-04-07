@@ -11,6 +11,6 @@ Structure of the project:
 		* tmvaClassification.cpp - training and testing of the TMVA classifiers, placing the output into *data/tmva.root*
 		* tmvaClassificationApplication.cpp - an analysis module to use the trained classifiers
 * Startup scripts
-	* scripts/generate - generate a training tree and a testing tree
-	* scripts/classify - given a training tree and a testing tree in *data/*, launch the *tmvaClassification.cpp* macro
-	* scripts/app - given *data/tmva.root*, launch the *tmvaClassificationApplication.cpp* module
+	* generate - generate a training tree and a testing tree
+	* classify - given a training tree and a testing tree in *data/*, launch the *tmvaClassification.cpp* macro
+	* app - given *data/tmva.root*, launch the *tmvaClassificationApplication.cpp* module
