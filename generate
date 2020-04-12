@@ -1,0 +1,15 @@
+#!/bin/sh
+
+if [[ $1 == '' ]]; then
+	echo 'Usage:' $0 'number_of_events'
+	exit
+fi
+
+mkdir -p data
+if [[ -a bin/makeData ]]; then
+	bin/makeData $1
+else
+	echo 'Compiling bin/makeData ...'
+	g++ -std=c++17 -Wall -Wextra -Wpedantic `root-config --libs` `root-config --cflags` -I/usr/include -I${ROOTSYS}/include/root src/data-gen/makeData.cpp -o bin/makeData \
+	&& bin/makeData $1
+fi

@@ -1,0 +1,7 @@
+#!/bin/sh
+
+if [[ -a src/algorithm/example/tmvaClassification.cpp ]]; then
+	root -l src/algorithm/example/tmvaClassification.cpp
+else
+	echo 'Error: no classification script found'
+fi
