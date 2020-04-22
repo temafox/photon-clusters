@@ -1,0 +1,12 @@
+#!/bin/sh
+if [[ -a "$1" ]]; then
+	train_test_file="$1"
+else
+	train_test_file="data/data.root"
+fi
+
+if [[ -a src/algorithm/example/tmvaClassification.cpp ]]; then
+	root -l src/algorithm/example/tmvaClassification.cpp'("'"$train_test_file"'")'
+else
+	echo 'Error: no classification script found'
+fi

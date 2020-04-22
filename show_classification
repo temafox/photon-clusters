@@ -1,0 +1,7 @@
+#!/bin/sh
+if [[ -a "$1" ]]; then
+	tmva_file="$1"
+else
+	tmva_file="data/tmva.root"
+fi
+root -l -e 'TMVA::TMVAGui("'"$tmva_file"'");'

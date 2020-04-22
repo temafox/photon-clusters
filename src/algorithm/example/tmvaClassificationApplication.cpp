@@ -14,7 +14,7 @@
 #include "TMVA/Reader.h"
 #include "TMVA/MethodCuts.h"
 
-void tmvaClassificationApplication() {
+void tmvaClassificationApplication( TString infilename = "data/data.root", TString outfilename = "data/tmva_app.root" ) {
 	/// Show a greeting
 	std::cout << "Photon clusters - TMVA classification application" << std::endl;
 
@@ -45,7 +45,7 @@ void tmvaClassificationApplication() {
 
 	/// Open the input file
 	TFile *inputFile(0);
-	TString ifname = "data/data.root";
+	TString ifname = infilename;
 	if( !gSystem->AccessPathName( ifname ) ) {
 		inputFile = TFile::Open( ifname );
 	} else {
@@ -61,7 +61,7 @@ void tmvaClassificationApplication() {
 
 	/// Open the output file <- create/overwrite it
 	TFile *outputFile(0);
-	TString ofname = "data/tmva_app.root";
+	TString ofname = outfilename;
 	outputFile = new TFile( ofname, "RECREATE" );
 
 	/// Set up the input tree
@@ -75,6 +75,7 @@ void tmvaClassificationApplication() {
 	tr->SetBranchAddress( "age", &age );
 
 	/// Fill the histogram with MVA function of events
+	/// Discriminate events by the value of MVA
 	Long64_t entryNumber = tr->GetEntries();
 	std::cout << "--- Processing: " << entryNumber << " events" << std::endl;
 
