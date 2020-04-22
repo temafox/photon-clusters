@@ -102,6 +102,13 @@ int tmvaClassification( TString infilename = "data/data.root", TString outfilena
 	factory->TestAllMethods();
 	factory->EvaluateAllMethods();
 
+	/// Save the best cut value
+	Float_t MVA_threshold = dynamic_cast< TMVA::MethodBase * >( factory->GetMethod( "dataset", "BDT" ) )->GetSignalReferenceCut();
+	std::cout << "The MVA threshold value: " << MVA_threshold << std::endl;
+	
+	TParameter< Float_t > storing_MVA_threshold( "MVA_threshold", MVA_threshold );
+	storing_MVA_threshold.Write();
+
 	/// Clean up
 	outputFile->Close();
 

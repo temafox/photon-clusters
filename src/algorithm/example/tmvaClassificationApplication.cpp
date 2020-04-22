@@ -38,10 +38,10 @@ void tmvaClassificationApplication( TString infilename = "data/data.root", TStri
 
 	reader->BookMVA( methodName, weightFile );
 
-	/// Create a histogram for training events
+	/// Create a histogram for events
 	UInt_t nbin = 100;
 	TH1F *histBDT(0);
-	histBDT = new TH1F( "MVA_BDT", "MVA_BDT", nbin, -0.8, 0.8 );
+	histBDT = new TH1F( "MVA_BDT", "Common MVA BDT response", nbin, -0.8, 0.8 );
 
 	/// Open the input file
 	TFile *inputFile(0);
@@ -59,6 +59,10 @@ void tmvaClassificationApplication( TString infilename = "data/data.root", TStri
 		exit(1);
 	}
 
+	/// Extract the best cut value
+	// This is a bad feature!
+	TFile *tmvaFile = new TFile( "data/tmva.root" );
+
 	/// Open the output file <- create/overwrite it
 	TFile *outputFile(0);
 	TString ofname = outfilename;
@@ -73,9 +77,28 @@ void tmvaClassificationApplication( TString infilename = "data/data.root", TStri
 	tr->SetBranchAddress( "mass", &mass );
 	tr->SetBranchAddress( "height", &height );
 	tr->SetBranchAddress( "age", &age );
+	Int_t type;
+	tr->SetBranchAddress( "type", &type );
 
-	/// Fill the histogram with MVA function of events
+	/// Prepare the output trees
+	TTree *tr_signal = new TTree( "tr_signal", "A tree of recognized signals" );
+	TTree *tr_background = new TTree( "tr_background", "A tree of recognized background events" );
+	
+	tr_signal->Branch( "age", &age );
+	tr_signal->Branch( "mass", &mass );
+	tr_signal->Branch( "height", &height );
+	tr_signal->Branch( "type", &type );
+
+	tr_background->Branch( "age", &age );
+	tr_background->Branch( "mass", &mass );
+	tr_background->Branch( "height", &height );
+	tr_background->Branch( "type", &type );
+
+	/// Fill the histogram with the MVA function of events
 	/// Discriminate events by the value of MVA
+	TParameter< Float_t > *thr = ( TParameter< Float_t > * )tmvaFile->Get( "dataset;MVA_threshold" );
+	Float_t MVA_threshold = thr->GetVal();
+
 	Long64_t entryNumber = tr->GetEntries();
 	std::cout << "--- Processing: " << entryNumber << " events" << std::endl;
 
@@ -86,7 +109,13 @@ void tmvaClassificationApplication( TString infilename = "data/data.root", TStri
 		if( i % 1000 == 0 )
 			std::cout << "--- ... Processing event: " << i << std::endl;
 		tr->GetEntry( i );
-		histBDT->Fill( reader->EvaluateMVA( "BDT method" ) );
+
+		Float_t MVA_response = reader->EvaluateMVA( "BDT method" );
+		histBDT->Fill( MVA_response );
+		if( MVA_response < MVA_threshold )
+			tr_background->Fill();
+		else
+			tr_signal->Fill();
 	}
 
 	stopwatch.Stop();
@@ -95,6 +124,8 @@ void tmvaClassificationApplication( TString infilename = "data/data.root", TStri
 
 	/// Write output, clean up
 	histBDT->Write();
+	tr_signal->Write();
+	tr_background->Write();
 
 	outputFile->Close();
 	std::cout << "Created root file: " << outputFile->GetName() << " containing the MVA output histograms" << std::endl;
