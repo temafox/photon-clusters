@@ -1,3 +1,4 @@
+#include <fstream>
 #include <cstdlib>
 #include <vector>
 #include <iostream>
@@ -60,10 +61,11 @@ void tmvaClassificationApplication( TString infilename = "data/data.root", TStri
 	}
 
 	/// Extract the best cut value
-	// This is a bad feature!
-	TFile *tmvaFile = new TFile( "data/tmva.root" );
+	std::ifstream thresholdFile( "data/threshold.Float_t" );
+	Float_t MVA_threshold;
+	thresholdFile.read( ( char * )&MVA_threshold, sizeof( Float_t ) );
+	thresholdFile.close();
 
-	/// Open the output file <- create/overwrite it
 	TFile *outputFile(0);
 	TString ofname = outfilename;
 	outputFile = new TFile( ofname, "RECREATE" );
@@ -96,11 +98,13 @@ void tmvaClassificationApplication( TString infilename = "data/data.root", TStri
 
 	/// Fill the histogram with the MVA function of events
 	/// Discriminate events by the value of MVA
-	TParameter< Float_t > *thr = ( TParameter< Float_t > * )tmvaFile->Get( "dataset;MVA_threshold" );
-	Float_t MVA_threshold = thr->GetVal();
+	std::cout << "MVA threshold: " << MVA_threshold << std::endl;
 
 	Long64_t entryNumber = tr->GetEntries();
 	std::cout << "--- Processing: " << entryNumber << " events" << std::endl;
+
+	// Count false signal and background events
+	Int_t falseBackgroundCount= 0, falseSignalCount= 0;
 
 	TStopwatch stopwatch;
 	stopwatch.Start();
@@ -112,15 +116,30 @@ void tmvaClassificationApplication( TString infilename = "data/data.root", TStri
 
 		Float_t MVA_response = reader->EvaluateMVA( "BDT method" );
 		histBDT->Fill( MVA_response );
-		if( MVA_response < MVA_threshold )
+		if( MVA_response < MVA_threshold ) {
 			tr_background->Fill();
-		else
+			if( type != -1 )
+				++falseBackgroundCount;
+		} else {
 			tr_signal->Fill();
+			if( type != 1 )
+				++falseSignalCount;
+		}
 	}
 
 	stopwatch.Stop();
 	std::cout << "--- End of event loop: ";
 	stopwatch.Print();
+
+	/// Report on false recognitions
+	std::cout << "Signal:"
+		<< "\n- overall " << tr_signal->GetEntries()
+		<< "\n- true    " << (tr_signal->GetEntries() - falseSignalCount)
+		<< "\n- false   " << falseSignalCount<< std::endl;
+	std::cout << "Background:"
+		<< "\n- overall " << tr_background->GetEntries()
+		<< "\n- true    " << (tr_background->GetEntries() - falseBackgroundCount)
+		<< "\n- false   " << falseBackgroundCount<< std::endl;
 
 	/// Write output, clean up
 	histBDT->Write();

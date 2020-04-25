@@ -2,6 +2,7 @@
 #include <iostream>
 #include <map>
 #include <string>
+#include <fstream>
 
 #include "TMVA/Types.h"
 #include "TChain.h"
@@ -106,10 +107,12 @@ int tmvaClassification( TString infilename = "data/data.root", TString outfilena
 	Float_t MVA_threshold = dynamic_cast< TMVA::MethodBase * >( factory->GetMethod( "dataset", "BDT" ) )->GetSignalReferenceCut();
 	std::cout << "The MVA threshold value: " << MVA_threshold << std::endl;
 	
-	TParameter< Float_t > storing_MVA_threshold( "MVA_threshold", MVA_threshold );
-	storing_MVA_threshold.Write();
+	std::ofstream thresholdFile( "data/threshold.Float_t" );
+	thresholdFile.write( ( char * )&MVA_threshold, sizeof( Float_t ) );
+	thresholdFile << "\n" << MVA_threshold;
 
 	/// Clean up
+	thresholdFile.close();
 	outputFile->Close();
 
 	std::cout << "--- TMVAClassification: Wrote output" << std::endl;
