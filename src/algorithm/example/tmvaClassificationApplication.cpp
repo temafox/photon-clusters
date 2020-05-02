@@ -39,10 +39,12 @@ void tmvaClassificationApplication( TString infilename = "data/data.root", TStri
 
 	reader->BookMVA( methodName, weightFile );
 
-	/// Create a histogram for events
+	/// Create histograms for events
 	UInt_t nbin = 100;
-	TH1F *histBDT(0);
-	histBDT = new TH1F( "MVA_BDT", "Common MVA BDT response", nbin, -0.8, 0.8 );
+	TH1F *histBDT = new TH1F( "MVA_BDT", "Common MVA BDT response", nbin, -0.8, 0.8 );
+	TH1F *histBDTSignal = new TH1F( "MVA_BDT_signal", "Signal MVA BDT response", nbin, -0.8, 0.8 );
+	TH1F *histBDTBackground = new TH1F( "MVA_BDT_background", "Background MVA BDT response", nbin, -0.8, 0.8 );
+	histBDTBackground->SetLineColor(kRed);
 
 	/// Open the input file
 	TFile *inputFile(0);
@@ -125,6 +127,11 @@ void tmvaClassificationApplication( TString infilename = "data/data.root", TStri
 			if( type != 1 )
 				++falseSignalCount;
 		}
+
+		if( type == -1 )
+			histBDTBackground->Fill( MVA_response );
+		else
+			histBDTSignal->Fill( MVA_response );
 	}
 
 	stopwatch.Stop();
@@ -140,6 +147,12 @@ void tmvaClassificationApplication( TString infilename = "data/data.root", TStri
 		<< "\n- overall " << tr_background->GetEntries()
 		<< "\n- true    " << (tr_background->GetEntries() - falseBackgroundCount)
 		<< "\n- false   " << falseBackgroundCount<< std::endl;
+	std::cout << "MVA threshold: " << MVA_threshold << std::endl;
+
+	/// Draw histograms
+	TCanvas *canvas = new TCanvas();
+	histBDTSignal->Draw();
+	histBDTBackground->Draw("same");
 
 	/// Write output, clean up
 	histBDT->Write();
