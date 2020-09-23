@@ -5,8 +5,8 @@ else
 	data_file="data/data.root"
 fi
 
-if [[ -a src/algorithm/example/tmvaClassificationApplication.cpp ]]; then
-	root -l src/algorithm/example/tmvaClassificationApplication.cpp'("'"$data_file"'")'
+if [[ -a src/example/tmvaClassificationApplication.cpp ]]; then
+	root -l src/example/tmvaClassificationApplication.cpp'("'"$data_file"'")'
 else
 	echo 'Error: no classification application script found'
 fi

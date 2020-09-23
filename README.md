@@ -7,7 +7,7 @@ Structure of the project:
 	* src/data-gen/makeData.cpp - generate a tree of model signal
 	* data/ - a directory for data generation and access to data
 * Algorithm training and testing
-	* src/algorithm/example/ - an example of algorithm training and testing
+	* src/example/ - an example of algorithm training and testing
 		* tmvaClassification.cpp - training and testing of the TMVA classifiers, placing the output into *data/tmva.root*
 		* tmvaClassificationApplication.cpp - an analysis module to use the trained classifiers
 * Startup scripts

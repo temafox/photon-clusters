@@ -1,0 +1,12 @@
+#!/bin/sh
+if [[ -a "$1" ]]; then
+	data_file="$1"
+else
+	data_file="data/data.root"
+fi
+
+if [[ -a src/search/searchFused.cpp ]]; then
+	root -l src/search/searchFused.cpp'("'"$data_file"'")'
+else
+	echo 'Error: no search for fused clusters script found'
+fi
