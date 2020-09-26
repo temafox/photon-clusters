@@ -1,8 +1,10 @@
 # photon-clusters
-Code for my third-year coursework
+Code for my third-year coursework and diploma
 
 Structure of the project:
 * This README file for documentation
+* Cluster division
+	* src/div/selectPhotons.C - clone a tree and select only those events where a photon appears in the decay of a pion
 * Data generation
 	* src/data-gen/makeData.cpp - generate a tree of model signal
 	* data/ - a directory for data generation and access to data
