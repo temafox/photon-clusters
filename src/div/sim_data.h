@@ -49,7 +49,8 @@ namespace gera_nm {
 namespace cluster_div {
 	
 	struct Photon {
-		int photon_id;
+		static int totalPhotonNumber;
+		int photonID;
 
 		int simtype;
 		int simorig;
@@ -61,7 +62,14 @@ namespace cluster_div {
 		Float_t simvtx;
 		Float_t simvty;
 		Float_t simvtz;
+
+		Photon() {
+			photonID = totalPhotonNumber;
+			++totalPhotonNumber;
+		}
 	};
+
+	int Photon::totalPhotonNumber = 0;
 
 /*
 	struct Strip {
