@@ -8,6 +8,8 @@
 #define PHOTON (22)
 #define PION (111)
 
+#define MAX_SIM (100)
+
 namespace gera_nm {
 	
 	struct strip_data {
@@ -29,21 +31,73 @@ namespace gera_nm {
 		std::vector< double > z;
 	};
 
+	struct tree_data {
+		int nsim;
+		int finalstate_id;
+		int simtype[ MAX_SIM ];
+		int simorig[ MAX_SIM ];
+		Float_t simmom[ MAX_SIM ];
+		Float_t simphi[ MAX_SIM ];
+		Float_t simtheta[ MAX_SIM ];
+		Float_t simvtx[ MAX_SIM ];
+		Float_t simvty[ MAX_SIM ];
+		Float_t simvtz[ MAX_SIM ];
+	};
+
 }
 
 namespace cluster_div {
+	
+	struct Photon {
+		int photon_id;
 
-	struct sim_data {
 		int simtype;
 		int simorig;
+
 		Float_t simmom;
 		Float_t simphi;
 		Float_t simtheta;
+
 		Float_t simvtx;
 		Float_t simvty;
 		Float_t simvtz;
 	};
 
+/*
+	struct Strip {
+		
+	};
+	
+	class Cross {
+	private:
+		int strip_id[2];
+	public:
+		Cross( int strip1, int strip2 ) {
+			if( strip1 < strip2 ) {
+				strip_id[0] = strip1;
+				strip_id[1] = strip2;
+			} else if( strip2 < strip1 ) {
+				strip_id[0] = strip2;
+				strip_id[1] = strip1;
+			} else {
+				throw std::exception(); // 
+			}
+		}
+	};
+*/
+	
+	struct Cluster {
+		double cphi;
+		double ctheta;
+		int numPhotons;
+		
+		Cluster():
+			cphi{0.},
+			ctheta{0.},
+			numPhotons{0}
+		{}
+	};
+	
 }
 
 #endif // SIM_DATA_H
