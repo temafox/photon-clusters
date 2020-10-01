@@ -63,13 +63,9 @@ namespace cluster_div {
 		Float_t simvty;
 		Float_t simvtz;
 
-		Photon() {
-			photonID = totalPhotonNumber;
-			++totalPhotonNumber;
-		}
+		Photon();
+		Photon( gera_nm::tree_data const &, size_t index );
 	};
-
-	int Photon::totalPhotonNumber = 0;
 
 /*
 	struct Strip {
@@ -95,17 +91,46 @@ namespace cluster_div {
 */
 	
 	struct Cluster {
+		int cluster_id; // from gera_nm::strip_data
+
 		double cphi;
 		double ctheta;
 		int numPhotons;
 		
-		Cluster():
-			cphi{0.},
-			ctheta{0.},
-			numPhotons{0}
-		{}
+		Cluster( int cluster_id );
 	};
 	
 }
 
+///////////////////////////////////////////////////////////
+//                    Implementations                    //
+///////////////////////////////////////////////////////////
+
+namespace cluster_div {
+
+	int Photon::totalPhotonNumber = 0;
+
+	Photon::Photon() {
+		photonID = totalPhotonNumber;
+		++totalPhotonNumber;
+	}
+
+	Photon::Photon( gera_nm::tree_data const &event, size_t index ) {
+		this->simtype = event.simtype[index];
+		this->simorig = event.simorig[index];
+		this->simmom = event.simmom[index];
+		this->simphi = event.simphi[index];
+		this->simtheta = event.simtheta[index];
+		this->simvtx = event.simvtx[index];
+		this->simvty = event.simvty[index];
+		this->simvtz = event.simvtz[index];
+	}
+
+	Cluster::Cluster( int cluster_id ):
+		cluster_id{cluster_id},
+		cphi{0.},
+		ctheta{0.},
+		numPhotons{0}
+	{}
+}
 #endif // SIM_DATA_H

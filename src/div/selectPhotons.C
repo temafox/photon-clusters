@@ -2,6 +2,9 @@
 #include <cmath>
 #include "sim_data.h"
 
+template < typename T >
+size_t findIndex( std::vector< T > const &vec, T const &elem);
+	
 namespace cluster_div {
 
 	/// Create a tree of events where a photon comes from a pion decay
@@ -44,6 +47,7 @@ namespace cluster_div {
 		
 		TH1F *angDist = new TH1F( "angDist", "Angular distance to closest cluster", 70, 0, TMath::Pi() );
 
+		nEntries = 1000;
 		for( Long64_t i = 0; i < nEntries; ++i ) {
 			inTree->GetEntry(i);
 			
@@ -52,19 +56,14 @@ namespace cluster_div {
 
 			for( int j = 0; j < event.nsim; ++j ) {
 				if( event.simtype[j] == PHOTON && event.simorig[j] == PION ) {
-					Photon photon;
-					photon.simtype = event.simtype[j];
-					photon.simorig = event.simorig[j];
-					photon.simmom = event.simmom[j];
-					photon.simphi = event.simphi[j];
-					photon.simtheta = event.simtheta[j];
-					photon.simvtx = event.simvtx[j];
-					photon.simvty = event.simvty[j];
-					photon.simvtz = event.simvtz[j];
+					Photon photon(event, j);
 
 					// For this photon find the closest cluster
 					size_t closestClusterID = -1;
 					for( size_t clusterID = 0; clusterID < clusters.size(); ++clusterID ) {
+						if( closestClusterID == -1 ) {
+							closestClusterID = clusterID;
+						}
 						if( angularDistance(clusters[clusterID], photon) < angularDistance(clusters[closestClusterID], photon) )
 							closestClusterID = clusterID;
 					}
@@ -78,7 +77,8 @@ namespace cluster_div {
 			}
 		}
 		
-		angDist->Draw("AP");
+		std::cout << angDist->GetEntries() << std::endl;
+		angDist->Draw();
 
 		//outFile->Print();
 		delete inFile;
@@ -96,47 +96,49 @@ namespace cluster_div {
 		
 		for( size_t cross_i = 0; cross_i < numberOfCrosses; ++cross_i ) {
 			// Find the indices of the crossing strips
-			std::vector< int >::const_iterator strip1_iterator, strip2_iterator;
-			strip1_iterator = std::find( strips.packedID.cbegin(), strips.packedID.cend(), cross_pos.id1[cross_i] );
-			strip2_iterator = std::find( strips.packedID.cbegin(), strips.packedID.cend(), cross_pos.id2[cross_i] );
-
-			size_t strip1 = strip1_iterator - strips.packedID.cbegin();
-			size_t strip2 = strip2_iterator - strips.packedID.cbegin();
+			size_t strip1 = findIndex( strips.packedID, cross_pos.id1[cross_i] );
+			size_t strip2 = findIndex( strips.packedID, cross_pos.id2[cross_i] );
 
 			// Ensure that both strips belong to the same cluster
-			// and that clusterID != -1 (means no cluster)
-			int clusterID = strips.cluster_id[strip1];
-			if( clusterID == (size_t)(-1) )
+			// and that cluster_id != -1 (means no cluster)
+			int cluster_id = strips.cluster_id[strip1];
+			if( cluster_id == -1 )
 				continue;
-			if( clusterID != strips.cluster_id[strip2] )
+			if( cluster_id != strips.cluster_id[strip2] )
 				continue;
 
-			// Expand `clusters' if we have come across a new cluster
-			if( clusters->size() < clusterID + 1 ) {
-				clusters->resize( clusterID + 1 );
-				runningX.resize( clusterID + 1, 0 );
-				runningY.resize( clusterID + 1, 0 );
-				runningZ.resize( clusterID + 1, 0 );
-				sizes.resize( clusterID + 1, 0 );
+			// Find this cluster among the already listed ones
+			int clusterIndex;
+			std::vector< Cluster >::const_iterator clusterIt = std::find_if( clusters->cbegin(), clusters->cend(), [ cluster_id ]( Cluster const &c ) { return c.cluster_id == cluster_id; } );
+			if( clusterIt == clusters->cend() ) {
+				clusters->push_back( Cluster(cluster_id) );
+				clusterIndex = clusters->size() - 1;
+			} else {
+				clusterIndex = clusterIt - clusters->cbegin();
 			}
 
 			// Add to the running sums
-			runningX[clusterID] += cross_pos.x[cross_i];
-			runningY[clusterID] += cross_pos.y[cross_i];
-			runningZ[clusterID] += cross_pos.z[cross_i];
-			++sizes[clusterID];
+			runningX[clusterIndex] += cross_pos.x[cross_i];
+			runningY[clusterIndex] += cross_pos.y[cross_i];
+			runningZ[clusterIndex] += cross_pos.z[cross_i];
+			++sizes[clusterIndex];
 		}
 
 		// Convert Cartesian into spherical
-		for( size_t clusterID = 0; clusterID < clusters->size(); ++clusterID ) {
-			runningX[clusterID] /= sizes[clusterID];
-			runningY[clusterID] /= sizes[clusterID];
-			runningZ[clusterID] /= sizes[clusterID];
+		for( size_t clusterIndex = 0; clusterIndex < clusters->size(); ++clusterIndex ) {
+			runningX[clusterIndex] /= sizes[clusterIndex];
+			runningY[clusterIndex] /= sizes[clusterIndex];
+			runningZ[clusterIndex] /= sizes[clusterIndex];
 
 			// tg(phi) = y/x
 			// tg(theta) = r/z, r^2 = x^2 + y^2
-			(*clusters)[clusterID].cphi = std::atan2( runningY[clusterID], runningX[clusterID] );
-			(*clusters)[clusterID].ctheta = std::atan2( std::sqrt( std::pow(runningX[clusterID], 2) + std::pow(runningY[clusterID], 2) ), runningZ[clusterID] );
+			(*clusters)[clusterIndex].cphi = std::atan2( runningY[clusterIndex], runningX[clusterIndex] );
+			(*clusters)[clusterIndex].ctheta = std::atan2( std::sqrt( std::pow(runningX[clusterIndex], 2) + std::pow(runningY[clusterIndex], 2) ), runningZ[clusterIndex] );
+
+			std::cout << "cluster_id == " << (*clusters)[clusterIndex].cluster_id
+			          << "\ncphi == " << (*clusters)[clusterIndex].cphi
+				  << "\nctheta == " << (*clusters)[clusterIndex].ctheta
+				  << std::endl;
 		}
 
 		return *clusters;
@@ -150,6 +152,14 @@ namespace cluster_div {
 
 		return std::acos( std::cos(ctheta)*std::cos(phtheta) + std::sin(ctheta)*std::sin(phtheta)*std::cos(cphi-phphi) );
 	}
+}
+
+template < typename T >
+size_t findIndex( std::vector< T > const &vec, T const &elem) {
+	typename std::vector< T >::const_iterator it = std::find( vec.cbegin(), vec.cend(), elem );
+	if( it == vec.cend() ) // not found
+		return -1;
+	return it - vec.cbegin();
 }
 
 void selectPhotons( const std::string &inFileName = "/store25/semenov/strips_run039799.root", const std::string &outFileName = "/store25/bazhenov/piph.root" ) {
