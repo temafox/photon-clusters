@@ -2,6 +2,7 @@
 #define SIM_DATA_H
 
 #include <vector>
+#include <cmath>
 #include "TObject.h"
 
 // Values from Monte Carlo simulation
@@ -89,15 +90,25 @@ namespace cluster_div {
 		}
 	};
 */
-	
+	struct Cluster_id_t {
+		int cluster_id1;
+		int cluster_id2;
+
+		Cluster_id_t( int cluster_id1, int cluster_id2 );
+		bool operator<( Cluster_id_t const &right ) const {
+			return cluster_id1 < right.cluster_id1 && cluster_id2 < right.cluster_id2;
+		}
+	};
+
 	struct Cluster {
-		int cluster_id; // from gera_nm::strip_data
+		//Cluster_id_t cluster_id;
 
 		double cphi;
 		double ctheta;
 		int numPhotons;
 		
-		Cluster( int cluster_id );
+		Cluster();
+		//Cluster( int cluster_id1, int cluster_id2 );
 	};
 	
 }
@@ -126,11 +137,17 @@ namespace cluster_div {
 		this->simvtz = event.simvtz[index];
 	}
 
-	Cluster::Cluster( int cluster_id ):
-		cluster_id{cluster_id},
+	Cluster::Cluster(): // int cluster_id1, int cluster_id2 ):
+		//cluster_id{ Cluster_id_t(cluster_id1, cluster_id2) },
 		cphi{0.},
 		ctheta{0.},
 		numPhotons{0}
 	{}
+
+	Cluster_id_t::Cluster_id_t( int cluster_id1, int cluster_id2 ):
+		cluster_id1{ std::min( cluster_id1, cluster_id2 ) },
+		cluster_id2{ std::max( cluster_id1, cluster_id2 ) }
+	{}
+
 }
 #endif // SIM_DATA_H
