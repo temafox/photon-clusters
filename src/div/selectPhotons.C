@@ -11,7 +11,7 @@ namespace cluster_div {
 	/// without saving into a file
 	void selectPhotons( const std::string &inFileName = "/store25/semenov/strips_run039799.root", const std::string &outFileName = "/store25/bazhenov/piph.root" );
 	
-	/// Create `Cluster' structures for each cluster
+	/// Create `Cluster` structures for each cluster
 	std::map< Cluster_id_t, Cluster > const *findClusterCenters( gera_nm::strip_data const &strips, gera_nm::cross_data const &cross_pos );
 
 	double angularDistance( Cluster const &, Photon const & );
@@ -25,6 +25,7 @@ namespace cluster_div {
 		TTree *inTree = ( TTree * )inFile->Get( "tr_lxe;80" );
 
 		Long64_t nEntries = inTree->GetEntries();
+		std::cout << "nEntries = " << nEntries << std::endl;
 
 		gera_nm::tree_data event;
 		gera_nm::strip_data *strips = new gera_nm::strip_data;
@@ -43,45 +44,56 @@ namespace cluster_div {
 		inTree->SetBranchAddress( "cross_pos", &cross_pos );
 
 		TH1F *angDist = new TH1F( "angDist", "Angular distance to closest cluster", 70, 0, TMath::Pi() );
+		TH1F *angDistLayered[7];
+		for( int i = 0; i < 7; ++i ) {
+			char name[] = "angDistN";
+			char title[] = "Angular distance at layer N";
+			name[7] = title[26] = '0' + i;
+			angDistLayered[i] = new TH1F( name, title, 70, 0, TMath::Pi() );
+		}
 
 		nEntries = 100;
 		for( Long64_t i = 0; i < nEntries; ++i ) {
 			inTree->GetEntry(i);
 			
 			std::map< Cluster_id_t, Cluster > const *clusters = findClusterCenters( *strips, *cross_pos );
-			std::cout << "\nEntry #" << i << " processed" << std::endl;
-			std::cout << "nsim = " << event.nsim << std::endl;
+			//std::cout << "\nEntry #" << i << std::endl;
+			//std::cout << "nsim = " << event.nsim << std::endl;
 
 			for( int j = 0; j < event.nsim; ++j ) {
-				std::cout << "simtype[" << j << "] = " << event.simtype[j]
-					  << "\nsimorig[" << j << "] = " << event.simorig[j]
-					  << "\nsimmom[" << j << "] = " << event.simmom[j]
-					  << "\nsimphi[" << j << "] = " << event.simphi[j]
-					  << "\nsimtheta[" << j << "] = " << event.simtheta[j]
-					  << "\nsimvtx[" << j << "] = " << event.simvtx[j]
-					  << "\nsimvty[" << j << "] = " << event.simvty[j]
-					  << "\nsimvtz[" << j << "] = " << event.simvtz[j] << std::endl;
+				//std::cout << "[" << j << "]" << std::endl;
+				/*std::cout << "type=" << event.simtype[j]
+					  << ", orig=" << event.simorig[j] << "\n"
+					  << "mom=" << event.simmom[j]
+					  << ", phi=" << event.simphi[j]
+					  << ", theta=" << event.simtheta[j] << "\n"
+					  << "x=" << event.simvtx[j]
+					  << ", y=" << event.simvty[j]
+					  << ", z=" << event.simvtz[j] << std::endl;*/
 
 				if( event.simtype[j] == PHOTON && event.simorig[j] == PION ) {
 					Photon photon(event, j);
 
 					// For this photon find the closest cluster
 					std::map< Cluster_id_t, Cluster >::const_iterator closestClusterIt = clusters->cbegin();
-					std::cout << "clusters->size() = " << clusters->size() << std::endl;
+					//std::cout << "clusters->size() = " << clusters->size() << std::endl;
 					for( auto it = clusters->cbegin(); it != clusters->cend(); ++it ) {
 						if( angularDistance(it->second, photon) < angularDistance(closestClusterIt->second, photon) )
 							closestClusterIt = it;
 					}
-					if( closestClusterIt == clusters->cend() )
+					if( closestClusterIt == clusters->cend() ) {
+						//std::cout << "ang_dist NOT COMPUTED (continuing)" << std::endl;
 						continue;
+					}
 
 					double angDistValue = angularDistance( closestClusterIt->second, photon );
 					angDist->Fill( angDistValue );
+					//std::cout << "ang_dist=" << angDistValue << std::endl;
 				}
 			}
 		}
 		
-		std::cout << angDist->GetEntries() << std::endl;
+		std::cout << "\nAngular distance count: " << angDist->GetEntries() << std::endl;
 		angDist->Draw();
 	}
 

@@ -106,6 +106,7 @@ namespace cluster_div {
 		double cphi;
 		double ctheta;
 		int numPhotons;
+		int layerID;
 		
 		Cluster();
 		//Cluster( int cluster_id1, int cluster_id2 );
