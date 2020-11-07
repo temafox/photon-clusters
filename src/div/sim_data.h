@@ -9,6 +9,8 @@
 #define PHOTON (22)
 #define PION (111)
 
+#define LAYERS (7)
+
 #define MAX_SIM (100)
 
 namespace gera_nm {
@@ -103,10 +105,10 @@ namespace cluster_div {
 	struct Cluster {
 		//Cluster_id_t cluster_id;
 
+		int layer;
 		double cphi;
 		double ctheta;
 		int numPhotons;
-		int layerID;
 		
 		Cluster();
 		//Cluster( int cluster_id1, int cluster_id2 );
