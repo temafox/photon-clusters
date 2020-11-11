@@ -5,6 +5,8 @@
 template < typename T >
 size_t findIndex( std::vector< T > const &vec, T const &elem);
 	
+void initLayeredHistos( TH1F **, size_t, std::string const &, std::string const &, size_t, double, double );
+
 namespace cluster_div {
 
 	/// Create a tree of events where a photon comes from a pion decay
@@ -45,13 +47,10 @@ namespace cluster_div {
 		// Histograms with angular distances
 		// Layers are numbered 0..6
 		TH1F *angDist = new TH1F( "angDist", "Angular distance to closest cluster", 70, 0, TMath::Pi() );
-		TH1F *angDistLayer[LAYERS];
-		for( int i = 0; i < LAYERS; ++i ) {
-			char name[] = "angDistN";
-			char title[] = "Angular distance at layer N";
-			name[7] = title[26] = '0' + i;
-			angDistLayer[i] = new TH1F( name, title, 70, 0, TMath::Pi() );
-		}
+		TH1F *angDistLayer[LAYERS], *phiDistLayer[LAYERS], *thetaDistLayer[LAYERS];
+		initLayeredHistos( angDistLayer, LAYERS, "angDist", "Angular distance at layer ", 70, 0, TMath::Pi() );
+		initLayeredHistos( phiDistLayer, LAYERS, "phiDist", "Difference for phi at layer ", 140, 0, 2. * TMath::Pi() );
+		initLayeredHistos( thetaDistLayer, LAYERS, "thetaDist", "Difference for theta at layer ", 70, 0, TMath::Pi() );
 
 		//nEntries = 100;
 		std::cout << "nEntries = " << nEntries << std::endl;
@@ -78,17 +77,39 @@ namespace cluster_div {
 
 					// For this photon find the closest cluster overall
 					std::map< Cluster_id_t, Cluster >::const_iterator closestClusterIt = clusters->cbegin();
-					// and on each layer
-					std::map< Cluster_id_t, Cluster >::const_iterator closestClusterItLayer[LAYERS];
-					for( int i = 0; i < LAYERS; ++i )
-						closestClusterItLayer[i] = clusters->cbegin();
+
+					// Start by assuming there is no cluster on each particular layer
+					// Find the closest by angDist, by phi, and by theta
+					std::map< Cluster_id_t, Cluster >::const_iterator closestClusterItLayer[LAYERS],
+					                                                  phiItLayer[LAYERS],
+											  thetaItLayer[LAYERS];
+					for( int i = 0; i < LAYERS; ++i ) {
+						closestClusterItLayer[i] = clusters->cend();
+						phiItLayer[i] = clusters->cend();
+						thetaItLayer[i] = clusters->cend();
+					}
 
 					//std::cout << "clusters->size() = " << clusters->size() << std::endl;
 					for( auto it = clusters->cbegin(); it != clusters->cend(); ++it ) {
+						// Overall
 						if( angularDistance(it->second, photon) < angularDistance(closestClusterIt->second, photon) )
 							closestClusterIt = it;
-						if( angularDistance(it->second, photon) < angularDistance(closestClusterItLayer[it->second.layer]->second, photon ) )
+
+						// On the current layer
+						if( closestClusterItLayer[it->second.layer] == clusters->cend() )
 							closestClusterItLayer[it->second.layer] = it;
+						else if( angularDistance(it->second, photon) < angularDistance(closestClusterItLayer[it->second.layer]->second, photon ) )
+							closestClusterItLayer[it->second.layer] = it;
+
+						if( phiItLayer[it->second.layer] == clusters->cend() )
+							phiItLayer[it->second.layer] = it;
+						else if( std::fabs(it->second.cphi - photon.simphi) < std::fabs(phiItLayer[it->second.layer]->second.cphi - photon.simphi) )
+							phiItLayer[it->second.layer] = it;
+
+						if( thetaItLayer[it->second.layer] == clusters->cend() )
+							thetaItLayer[it->second.layer] = it;
+						else if( std::fabs(it->second.ctheta - photon.simtheta) < std::fabs(thetaItLayer[it->second.layer]->second.ctheta - photon.simtheta) )
+							thetaItLayer[it->second.layer] = it;
 					}
 
 					// If found no clusters whatsoever, give up on this photon
@@ -103,8 +124,25 @@ namespace cluster_div {
 					//std::cout << "ang_dist=" << angDistValue << std::endl;
 					
 					for( int i = 0; i < LAYERS; ++i ) {
+						if( closestClusterItLayer[i] == clusters->cend() )
+							continue;
+
 						double angDistValueLayer = angularDistance( closestClusterItLayer[i]->second, photon );
 						angDistLayer[i]->Fill( angDistValueLayer );
+					}
+					for( int i = 0; i < LAYERS; ++i ) {
+						if( phiItLayer[i] == clusters->cend() )
+							continue;
+
+						double phiDiffValueLayer = std::fabs( phiItLayer[i]->second.cphi - photon.simphi );
+						phiDistLayer[i]->Fill( phiDiffValueLayer );
+					}
+					for( int i = 0; i < LAYERS; ++i ) {
+						if( thetaItLayer[i] == clusters->cend() )
+							continue;
+
+						double thetaDiffValueLayer = std::fabs( thetaItLayer[i]->second.ctheta - photon.simtheta );
+						thetaDistLayer[i]->Fill( thetaDiffValueLayer );
 					}
 				}
 			}
@@ -130,6 +168,10 @@ namespace cluster_div {
 		angDist->Write();
 		for( int i = 0; i < LAYERS; ++i )
 			angDistLayer[i]->Write();
+		for( int i = 0; i < LAYERS; ++i )
+			phiDistLayer[i]->Write();
+		for( int i = 0; i < LAYERS; ++i )
+			thetaDistLayer[i]->Write();
 	}
 
 	std::map< Cluster_id_t, Cluster > const *findClusterCenters( gera_nm::strip_data const &strips, gera_nm::cross_data const &cross_pos ) {
@@ -202,16 +244,26 @@ namespace cluster_div {
 		double phphi = photon.simphi;
 		double phtheta = photon.simtheta;
 
-		return std::acos( std::cos(ctheta)*std::cos(phtheta) + std::sin(ctheta)*std::sin(phtheta)*std::cos(cphi-phphi) );
+		double angle = std::acos( std::cos(ctheta)*std::cos(phtheta) + std::sin(ctheta)*std::sin(phtheta)*std::cos(cphi-phphi) );
+		return angle;
 	}
 }
 
 template < typename T >
-size_t findIndex( std::vector< T > const &vec, T const &elem) {
+size_t findIndex( std::vector< T > const &vec, T const &elem ) {
 	typename std::vector< T >::const_iterator it = std::find( vec.cbegin(), vec.cend(), elem );
 	if( it == vec.cend() ) // not found
 		return -1;
 	return it - vec.cbegin();
+}
+
+void initLayeredHistos( TH1F **histArray, size_t size, std::string const &nameStart, std::string const &titleStart, size_t bins, double minX, double maxX ) {
+	for( int i = 0; i < size; ++i ) {
+		std::string name(nameStart), title(titleStart);
+		name.push_back( '0' + i );
+		title.push_back( '0' + i );
+		histArray[i] = new TH1F( name.c_str(), title.c_str(), bins, minX, maxX );
+	}
 }
 
 void selectPhotons( const std::string &inFileName = "/store25/semenov/strips_run039799.root", const std::string &outFileName = "/store25/bazhenov/piph.root" ) {
