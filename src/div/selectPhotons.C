@@ -102,25 +102,43 @@ namespace cluster_div {
             LAYERS,
             "angDist",
             "Angular distance at layer ",
-            70, 0, TMath::Pi()
+            70,
+            0, TMath::Pi()
         );
         initLayeredHistos(
             phiDistLayer,
             LAYERS,
             "phiDist",
             "Difference for phi at layer ",
-            140, 0, 2. * TMath::Pi()
+            140,
+            0, 2. * TMath::Pi()
         );
         initLayeredHistos(
             thetaDistLayer,
             LAYERS,
             "thetaDist",
             "Difference for theta at layer ",
-            70, 0, TMath::Pi()
+            70,
+            0, TMath::Pi()
+        );
+
+        // Angular distributions of pions
+        TH1F *piTheta = new TH1F( 
+            "piTheta",
+            "pi_simtheta",
+            70,
+            0, TMath::Pi()
+        );
+
+        TH1F *piPhi = new TH1F( 
+            "piPhi",
+            "pi_simphi",
+            140,
+            0, 2. * TMath::Pi()
         );
 
         // Process events
-        nEntries = 100;
+//        nEntries = 100;
         std::cout << "nEntries = " << nEntries << std::endl;
         for( Long64_t i = 0; i < nEntries; ++i ) {
             inTree->GetEntry(i);
@@ -129,6 +147,7 @@ namespace cluster_div {
                 = findClusterCenters( *strips, *cross_pos );
 
             for( int j = 0; j < event.nsim; ++j ) {
+                // pi0 -> _2gamma_
                 if( event.simtype[j] == PHOTON
                     && event.simorig[j] == PION
                 ) {
@@ -205,6 +224,12 @@ namespace cluster_div {
                         thetaDistLayer[i]->Fill( thetaDiffValueLayer );
                     }
                 }
+
+                // e+ e- -> _pi0_ gamma
+                if( event.simtype[j] == PION ) {
+                    piTheta->Fill( event.simtheta[j] );
+                    piPhi->Fill( event.simphi[j] );
+                }
             }
         }
         
@@ -220,6 +245,8 @@ namespace cluster_div {
             phiDistLayer[i]->Write();
         for( int i = 0; i < LAYERS; ++i )
             thetaDistLayer[i]->Write();
+        piTheta->Write();
+        piPhi->Write();
     }
 
 
