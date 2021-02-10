@@ -1,5 +1,13 @@
+#include <TH1F.h>
+#include <TFile.h>
+#include <TTree.h>
+#include <TMath.h>
+
 #include <algorithm>
 #include <cmath>
+#include <iostream>
+#include <utility>
+
 #include "sim_data.h"
 
 /// Search for `elem` in `vec` and return its index
@@ -9,47 +17,6 @@ size_t findIndex(
     T const &elem
 );
 
-/// Construct a 2D array `histArray` of TH1F
-/// with `size` histograms numbered 0..(`size`-1)
-class LayeredHistos {
-public:
-    TH1F **histArray;
-    size_t size;
-    std::string nameStart;
-    std::string titleStart;
-    size_t bins;
-    double minX;
-    double maxX;
-
-    LayeredHistos(size_t size, std::string const &nameStart, std::string const &titleStart, size_t bins, double minX, double maxX):
-        size(size),
-        nameStart(nameStart),
-        titleStart(titleStart),
-        bins(bins),
-        minX(minX),
-        maxX(maxX)
-    {
-        histArray = new (TH1F*)[size];
-        initLayeredHistos();
-    }
-
-    ~LayeredHistos() {
-        for(int i = 0; i < size; ++i)
-            delete histArray[i];
-        delete[] histArray;
-    }
-
-private:
-    void initLayeredHistos() {
-        histArray = new (TH1F*) [size];
-        for( int i = 0; i < size; ++i ) {
-            std::string name(nameStart), title(titleStart);
-            name.push_back( '0' + i );
-            title.push_back( '0' + i );
-            histArray[i] = new TH1F( name.c_str(), title.c_str(), bins, minX, maxX );
-        }
-    }
-};
 
 namespace cluster_div {
 
@@ -91,18 +58,18 @@ namespace cluster_div {
 namespace cluster_div {
 
     void selectPhotons(
-        const std::string &inFileName = "/store25/semenov/strips_run039799.root",
-        const std::string &outFileName = "/store25/bazhenov/piph.root"
+        const std::string &inFileName,
+        const std::string &outFileName
     ) {
         // Initialize inputs
-        TFile *inFile = new TFile( inFileName.c_str() );
-        TTree *inTree = ( TTree * )inFile->Get( "tr_lxe;80" );
+        auto inFile = new TFile( inFileName.c_str() );
+        auto inTree = ( TTree * )inFile->Get( "tr_lxe;80" );
 
         Long64_t nEntries = inTree->GetEntries();
 
-        gera_nm::tree_data event;
-        gera_nm::strip_data *strips = new gera_nm::strip_data;
-        gera_nm::cross_data *cross_pos = new gera_nm::cross_data;
+        gera_nm::tree_data event{};
+        auto strips = new gera_nm::strip_data;
+        auto cross_pos = new gera_nm::cross_data;
 
         inTree->SetBranchAddress( "nsim", &(event.nsim) );
         inTree->SetBranchAddress( "simtype", event.simtype );
@@ -160,18 +127,17 @@ namespace cluster_div {
                     Photon photon(event, j);
 
                     // For this photon find the closest cluster overall
-                    Cluster_map::const_iterator closestClusterIt
-                        = clusters->cbegin();
+                    auto closestClusterIt = clusters->cbegin();
 
                     // Start by assuming there is no cluster on each particular layer
                     // Find the closest by angDist, by phi, and by theta
                     Cluster_map::const_iterator closestClusterItLayer[LAYERS];
                     Cluster_map::const_iterator phiItLayer[LAYERS];
                     Cluster_map::const_iterator thetaItLayer[LAYERS];
-                    for( int i = 0; i < LAYERS; ++i ) {
-                        closestClusterItLayer[i] = clusters->cend();
-                        phiItLayer[i] = clusters->cend();
-                        thetaItLayer[i] = clusters->cend();
+                    for(int k = 0; k < LAYERS; ++k ) {
+                        closestClusterItLayer[k] = clusters->cend();
+                        phiItLayer[k] = clusters->cend();
+                        thetaItLayer[k] = clusters->cend();
                     }
 
                     for( auto it = clusters->cbegin();
@@ -212,26 +178,26 @@ namespace cluster_div {
                     double angDistValue = angularDistance( cluster(closestClusterIt), photon );
                     angDist->Fill( angDistValue );
                     
-                    for( int i = 0; i < LAYERS; ++i ) {
-                        if( closestClusterItLayer[i] == clusters->cend() )
+                    for(int k = 0; k < LAYERS; ++k ) {
+                        if(closestClusterItLayer[k] == clusters->cend() )
                             continue;
 
-                        double angDistValueLayer = angularDistance( cluster(closestClusterItLayer[i]), photon );
-                        angDistLayer[i]->Fill( angDistValueLayer );
+                        double angDistValueLayer = angularDistance(cluster(closestClusterItLayer[k]), photon );
+                        angleLayeredHistos[k].Fill(angDistValueLayer );
                     }
-                    for( int i = 0; i < LAYERS; ++i ) {
-                        if( phiItLayer[i] == clusters->cend() )
+                    for(int k = 0; k < LAYERS; ++k ) {
+                        if(phiItLayer[k] == clusters->cend() )
                             continue;
 
-                        double phiDiffValueLayer = std::fabs( cluster(phiItLayer[i]).cphi - photon.simphi );
-                        phiDistLayer[i]->Fill( phiDiffValueLayer );
+                        double phiDiffValueLayer = std::fabs(cluster(phiItLayer[k]).cphi - photon.simphi );
+                        phiLayeredHistos[k].Fill(phiDiffValueLayer );
                     }
-                    for( int i = 0; i < LAYERS; ++i ) {
-                        if( thetaItLayer[i] == clusters->cend() )
+                    for(int k = 0; k < LAYERS; ++k ) {
+                        if(thetaItLayer[k] == clusters->cend() )
                             continue;
 
-                        double thetaDiffValueLayer = std::fabs( cluster(thetaItLayer[i]).ctheta - photon.simtheta );
-                        thetaDistLayer[i]->Fill( thetaDiffValueLayer );
+                        double thetaDiffValueLayer = std::fabs(cluster(thetaItLayer[k]).ctheta - photon.simtheta );
+                        thetaLayeredHistos[k].Fill(thetaDiffValueLayer );
                     }
                 }
 
@@ -247,14 +213,14 @@ namespace cluster_div {
             << angDist->GetEntries() << std::endl;
 
         // Write histograms
-        TFile *histoFile = new TFile("histos.root", "recreate");
+        auto histoFile = new TFile("histos.root", "recreate");
         angDist->Write();
         for( int i = 0; i < LAYERS; ++i )
-            angDistLayer[i]->Write();
+            angleLayeredHistos[i].Write();
         for( int i = 0; i < LAYERS; ++i )
-            phiDistLayer[i]->Write();
+            phiLayeredHistos[i].Write();
         for( int i = 0; i < LAYERS; ++i )
-            thetaDistLayer[i]->Write();
+            thetaLayeredHistos[i].Write();
         piTheta->Write();
         piPhi->Write();
     }
@@ -264,7 +230,7 @@ namespace cluster_div {
         gera_nm::strip_data const &strips,
         gera_nm::cross_data const &cross_pos
     ) {
-        Cluster_map *clusters = new Cluster_map();
+        auto *clusters = new Cluster_map();
         size_t numberOfCrosses = cross_pos.id1.size();
         
         struct Running {
@@ -294,8 +260,8 @@ namespace cluster_div {
                 continue;
 
             // Ensure that the current cluster pair is listed
-            Cluster_map::iterator cl_it = clusters->find( cluster_id_paired );
-            std::map< Cluster_id_t, Running >::iterator run_it = running.find( cluster_id_paired );
+            auto cl_it = clusters->find( cluster_id_paired );
+            auto run_it = running.find( cluster_id_paired );
             if( cl_it == clusters->cend() ) {
                 // If not found, add the pair to the list
                 cl_it = ( clusters->insert( std::pair< Cluster_id_t, Cluster >(cluster_id_paired, Cluster()) ) ).first;
@@ -363,8 +329,7 @@ size_t findIndex(
     std::vector< T > const &vec,
     T const &elem
 ) {
-    typename std::vector< T >::const_iterator it
-        = std::find( vec.cbegin(), vec.cend(), elem );
+    auto it = std::find( vec.cbegin(), vec.cend(), elem );
 
     if( it == vec.cend() ) // not found
         return -1;

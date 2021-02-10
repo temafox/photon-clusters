@@ -116,6 +116,51 @@ namespace cluster_div {
 	
 }
 
+class LayeredHistos {
+public:
+    TH1F **histArray;
+    size_t size;
+    std::string nameStart;
+    std::string titleStart;
+    size_t bins;
+    double minX;
+    double maxX;
+
+    LayeredHistos(size_t size, std::string nameStart, std::string titleStart, size_t bins, double minX, double maxX):
+            size(size),
+            nameStart(std::move(nameStart)),
+            titleStart(std::move(titleStart)),
+            bins(bins),
+            minX(minX),
+            maxX(maxX)
+    {
+        histArray = new TH1F*[size];
+        initLayeredHistos();
+    }
+
+    ~LayeredHistos() {
+        for(int i = 0; i < size; ++i)
+            delete histArray[i];
+        delete[] histArray;
+    }
+
+    TH1F &operator[](size_t layer) {
+        return *(histArray[layer]);
+    }
+
+private:
+    void initLayeredHistos() {
+        histArray = new TH1F*[size];
+        for( int i = 0; i < size; ++i ) {
+            std::string name(nameStart), title(titleStart);
+            name.push_back( '0' + i );
+            title.push_back( '0' + i );
+            histArray[i] = new TH1F( name.c_str(), title.c_str(), bins, minX, maxX );
+        }
+    }
+};
+
+
 ///////////////////////////////////////////////////////////
 //                    Implementations                    //
 ///////////////////////////////////////////////////////////
