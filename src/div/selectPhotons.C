@@ -11,15 +11,45 @@ size_t findIndex(
 
 /// Construct a 2D array `histArray` of TH1F
 /// with `size` histograms numbered 0..(`size`-1)
-void initLayeredHistos(
-    TH1F **histArray,
-    size_t size,
-    std::string const &nameStart,
-    std::string const &titleStart,
-    size_t bins,
-    double minX,
-    double maxX
-);
+class LayeredHistos {
+public:
+    TH1F **histArray;
+    size_t size;
+    std::string nameStart;
+    std::string titleStart;
+    size_t bins;
+    double minX;
+    double maxX;
+
+    LayeredHistos(size_t size, std::string const &nameStart, std::string const &titleStart, size_t bins, double minX, double maxX):
+        size(size),
+        nameStart(nameStart),
+        titleStart(titleStart),
+        bins(bins),
+        minX(minX),
+        maxX(maxX)
+    {
+        histArray = new (TH1F*)[size];
+        initLayeredHistos();
+    }
+
+    ~LayeredHistos() {
+        for(int i = 0; i < size; ++i)
+            delete histArray[i];
+        delete[] histArray;
+    }
+
+private:
+    void initLayeredHistos() {
+        histArray = new (TH1F*) [size];
+        for( int i = 0; i < size; ++i ) {
+            std::string name(nameStart), title(titleStart);
+            name.push_back( '0' + i );
+            title.push_back( '0' + i );
+            histArray[i] = new TH1F( name.c_str(), title.c_str(), bins, minX, maxX );
+        }
+    }
+};
 
 namespace cluster_div {
 
@@ -42,7 +72,7 @@ namespace cluster_div {
     /// Create `Cluster` structures for each cluster
     Cluster_map const *findClusterCenters(
         gera_nm::strip_data const &strips,
-            gera_nm::cross_data const &cross_pos
+        gera_nm::cross_data const &cross_pos
     );
 
     /// Calculate the angular distance between the direction
@@ -94,33 +124,9 @@ namespace cluster_div {
             70, 0, TMath::Pi()
         );
 
-        TH1F *angDistLayer[LAYERS];
-        TH1F *phiDistLayer[LAYERS];
-        TH1F *thetaDistLayer[LAYERS];
-        initLayeredHistos(
-            angDistLayer,
-            LAYERS,
-            "angDist",
-            "Angular distance at layer ",
-            70,
-            0, TMath::Pi()
-        );
-        initLayeredHistos(
-            phiDistLayer,
-            LAYERS,
-            "phiDist",
-            "Difference for phi at layer ",
-            140,
-            0, 2. * TMath::Pi()
-        );
-        initLayeredHistos(
-            thetaDistLayer,
-            LAYERS,
-            "thetaDist",
-            "Difference for theta at layer ",
-            70,
-            0, TMath::Pi()
-        );
+        LayeredHistos angleLayeredHistos(LAYERS, "angDist", "Angular distance at layer ", 70, 0, TMath::Pi());
+        LayeredHistos phiLayeredHistos(LAYERS, "phiDist", "Difference for phi at layer ", 140, 0, 2. * TMath::Pi());
+        LayeredHistos thetaLayeredHistos(LAYERS, "thetaDist", "Difference for theta at layer ", 70, 0, TMath::Pi());
 
         // Angular distributions of pions
         TH1F *piTheta = new TH1F( 
@@ -138,7 +144,7 @@ namespace cluster_div {
         );
 
         // Process events
-//        nEntries = 100;
+        nEntries = 100;
         std::cout << "nEntries = " << nEntries << std::endl;
         for( Long64_t i = 0; i < nEntries; ++i ) {
             inTree->GetEntry(i);
@@ -173,27 +179,31 @@ namespace cluster_div {
                          ++it
                     ) {
                         // Overall
-                        if( angularDistance(cluster(it), photon) < angularDistance(cluster(closestClusterIt), photon) )
+                        if( angularDistance(cluster(it), photon) 
+                                < angularDistance(cluster(closestClusterIt), photon) )
                             closestClusterIt = it;
 
                         // On the current layer
                         if( closestClusterItLayer[cluster(it).layer] == clusters->cend() )
                             closestClusterItLayer[cluster(it).layer] = it;
-                        else if( angularDistance(cluster(it), photon) < angularDistance(cluster(closestClusterItLayer[cluster(it).layer]), photon ) )
+                        else if( angularDistance(cluster(it), photon) 
+                                < angularDistance(cluster(closestClusterItLayer[cluster(it).layer]), photon) )
                             closestClusterItLayer[cluster(it).layer] = it;
 
                         if( phiItLayer[cluster(it).layer] == clusters->cend() )
                             phiItLayer[cluster(it).layer] = it;
-                        else if( std::fabs(cluster(it).cphi - photon.simphi) < std::fabs(cluster(phiItLayer[cluster(it).layer]).cphi - photon.simphi) )
+                        else if( std::fabs(cluster(it).cphi - photon.simphi) 
+                                < std::fabs(cluster(phiItLayer[cluster(it).layer]).cphi - photon.simphi) )
                             phiItLayer[cluster(it).layer] = it;
 
                         if( thetaItLayer[cluster(it).layer] == clusters->cend() )
                             thetaItLayer[cluster(it).layer] = it;
-                        else if( std::fabs(cluster(it).ctheta - photon.simtheta) < std::fabs(cluster(thetaItLayer[cluster(it).layer]).ctheta - photon.simtheta) )
+                        else if( std::fabs(cluster(it).ctheta - photon.simtheta) 
+                                < std::fabs(cluster(thetaItLayer[cluster(it).layer]).ctheta - photon.simtheta) )
                             thetaItLayer[cluster(it).layer] = it;
                     }
 
-                    // If found no clusters whatsoever, give up on this photon
+                    // If we found no clusters whatsoever, give up on this photon
                     if( closestClusterIt == clusters->cend() ) {
                         continue;
                     }
@@ -359,24 +369,6 @@ size_t findIndex(
     if( it == vec.cend() ) // not found
         return -1;
     return it - vec.cbegin();
-}
-
-
-void initLayeredHistos(
-    TH1F **histArray,
-    size_t size,
-    std::string const &nameStart,
-    std::string const &titleStart,
-    size_t bins,
-    double minX,
-    double maxX
-) {
-    for( int i = 0; i < size; ++i ) {
-        std::string name(nameStart), title(titleStart);
-        name.push_back( '0' + i );
-        title.push_back( '0' + i );
-        histArray[i] = new TH1F( name.c_str(), title.c_str(), bins, minX, maxX );
-    }
 }
 
 
