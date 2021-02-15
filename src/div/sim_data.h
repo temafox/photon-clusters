@@ -1,9 +1,10 @@
 #ifndef SIM_DATA_H
 #define SIM_DATA_H
 
+#include <TObject.h>
+
 #include <vector>
 #include <cmath>
-#include "TObject.h"
 
 // Values from Monte Carlo simulation
 #define PHOTON (22)
@@ -15,106 +16,84 @@
 
 namespace gera_nm {
 	
-	struct strip_data {
-		std::vector< int > packedID;
-		std::vector< int > innerID;
-		std::vector< int > layer;
-		std::vector< int > direction;
-		std::vector< int > cluster_id;
-		std::vector< double > amp;
-		std::vector< double > sigma;
-	};
-	
-	struct cross_data {
-		// id1 < id2, either is packedID
-		std::vector< int > id1;
-		std::vector< int > id2;
-		std::vector< double > x;
-		std::vector< double > y;
-		std::vector< double > z;
-	};
+struct strip_data {
+    std::vector<int> packedID;
+    std::vector<int> innerID;
+    std::vector<int> layer;
+    std::vector<int> direction;
+    std::vector<int> cluster_id;
+    std::vector<double> amp;
+    std::vector<double> sigma;
+};
 
-	struct tree_data {
-		int nsim;
-		int finalstate_id;
-		int simtype[ MAX_SIM ];
-		int simorig[ MAX_SIM ];
-		Float_t simmom[ MAX_SIM ];
-		Float_t simphi[ MAX_SIM ];
-		Float_t simtheta[ MAX_SIM ];
-		Float_t simvtx[ MAX_SIM ];
-		Float_t simvty[ MAX_SIM ];
-		Float_t simvtz[ MAX_SIM ];
-	};
+struct cross_data {
+    // id1 < id2, both are packedID
+    std::vector<int> id1;
+    std::vector<int> id2;
+    std::vector<double> x;
+    std::vector<double> y;
+    std::vector<double> z;
+};
+
+struct tree_data {
+    int nsim;
+    int finalstate_id;
+    int simtype[MAX_SIM];
+    int simorig[MAX_SIM];
+    Float_t simmom[MAX_SIM];
+    Float_t simphi[MAX_SIM];
+    Float_t simtheta[MAX_SIM];
+    Float_t simvtx[MAX_SIM];
+    Float_t simvty[MAX_SIM];
+    Float_t simvtz[MAX_SIM];
+};
 
 }
 
 namespace cluster_div {
-	
-	struct Photon {
-		static int totalPhotonNumber;
-		int photonID;
 
-		int simtype;
-		int simorig;
+class Photon {
+public:
+    static int totalPhotonNumber;
+    int photonID;
 
-		Float_t simmom;
-		Float_t simphi;
-		Float_t simtheta;
+    int simtype;
+    int simorig;
 
-		Float_t simvtx;
-		Float_t simvty;
-		Float_t simvtz;
+    Float_t simmom;
+    Float_t simphi;
+    Float_t simtheta;
 
-		Photon();
-		Photon( gera_nm::tree_data const &, size_t index );
-	};
+    Float_t simvtx;
+    Float_t simvty;
+    Float_t simvtz;
 
-/*
-	struct Strip {
-		
-	};
-	
-	class Cross {
-	private:
-		int strip_id[2];
-	public:
-		Cross( int strip1, int strip2 ) {
-			if( strip1 < strip2 ) {
-				strip_id[0] = strip1;
-				strip_id[1] = strip2;
-			} else if( strip2 < strip1 ) {
-				strip_id[0] = strip2;
-				strip_id[1] = strip1;
-			} else {
-				throw std::exception(); // 
-			}
-		}
-	};
-*/
-	struct Cluster_id_t {
-		int cluster_id1;
-		int cluster_id2;
+    Photon();
+    Photon(const gera_nm::tree_data &, size_t index);
+};
 
-		Cluster_id_t( int cluster_id1, int cluster_id2 );
-		bool operator<( Cluster_id_t const &right ) const {
-			return cluster_id1 < right.cluster_id1 && cluster_id2 < right.cluster_id2;
-		}
-	};
+class Cluster_id_t {
+public:
+    int cluster_id1;
+    int cluster_id2;
 
-	struct Cluster {
-		//Cluster_id_t cluster_id;
+    Cluster_id_t(int cluster_id1, int cluster_id2);
+    bool operator<(const Cluster_id_t &right) const {
+        return (cluster_id1 < right.cluster_id1) && (cluster_id2 < right.cluster_id2);
+    }
+};
 
-		int layer;
-		double cphi;
-		double ctheta;
-		int numPhotons;
-		
-		Cluster();
-		//Cluster( int cluster_id1, int cluster_id2 );
-	};
-	
-}
+class Cluster {
+public:
+    int layer;
+    double cphi;
+    double ctheta;
+    int numPhotons;
+
+    Cluster();
+};
+
+typedef std::map<Cluster_id_t, Cluster> ClusterMap;
 
 class LayeredHistos {
 public:
@@ -126,76 +105,82 @@ public:
     double minX;
     double maxX;
 
-    LayeredHistos(size_t size, std::string nameStart, std::string titleStart, size_t bins, double minX, double maxX):
-            size(size),
-            nameStart(std::move(nameStart)),
-            titleStart(std::move(titleStart)),
-            bins(bins),
-            minX(minX),
-            maxX(maxX)
-    {
-        histArray = new TH1F*[size];
-        initLayeredHistos();
-    }
+    LayeredHistos(size_t size, std::string nameStart, std::string titleStart, size_t bins, double minX, double maxX);
+    ~LayeredHistos();
 
-    ~LayeredHistos() {
-        for(int i = 0; i < size; ++i)
-            delete histArray[i];
-        delete[] histArray;
-    }
-
-    TH1F &operator[](size_t layer) {
-        return *(histArray[layer]);
-    }
-
+    TH1F &operator[](size_t layer) const;
 private:
-    void initLayeredHistos() {
-        histArray = new TH1F*[size];
-        for( int i = 0; i < size; ++i ) {
-            std::string name(nameStart), title(titleStart);
-            name.push_back( '0' + i );
-            title.push_back( '0' + i );
-            histArray[i] = new TH1F( name.c_str(), title.c_str(), bins, minX, maxX );
-        }
-    }
+    void initLayeredHistos();
 };
 
+}
 
-///////////////////////////////////////////////////////////
-//                    Implementations                    //
-///////////////////////////////////////////////////////////
+/// Implementations
 
 namespace cluster_div {
 
-	int Photon::totalPhotonNumber = 0;
+int Photon::totalPhotonNumber = 0;
 
-	Photon::Photon() {
-		photonID = totalPhotonNumber;
-		++totalPhotonNumber;
-	}
+Photon::Photon():
+    photonID(totalPhotonNumber++)
+{}
 
-	Photon::Photon( gera_nm::tree_data const &event, size_t index ) {
-		this->simtype = event.simtype[index];
-		this->simorig = event.simorig[index];
-		this->simmom = event.simmom[index];
-		this->simphi = event.simphi[index];
-		this->simtheta = event.simtheta[index];
-		this->simvtx = event.simvtx[index];
-		this->simvty = event.simvty[index];
-		this->simvtz = event.simvtz[index];
-	}
+Photon::Photon(const gera_nm::tree_data &event, size_t index):
+    simtype(event.simtype[index]),
+    simorig(event.simorig[index]),
+    simmom(event.simmom[index]),
+    simphi(event.simphi[index]),
+    simtheta(event.simtheta[index]),
+    simvtx(event.simvtx[index]),
+    simvty(event.simvty[index]),
+    simvtz(event.simvtz[index])
+{}
 
-	Cluster::Cluster(): // int cluster_id1, int cluster_id2 ):
-		//cluster_id{ Cluster_id_t(cluster_id1, cluster_id2) },
-		cphi{0.},
-		ctheta{0.},
-		numPhotons{0}
-	{}
+Cluster::Cluster():
+    cphi(0.),
+    ctheta(0.),
+    numPhotons(0)
+{}
 
-	Cluster_id_t::Cluster_id_t( int cluster_id1, int cluster_id2 ):
-		cluster_id1{ std::min( cluster_id1, cluster_id2 ) },
-		cluster_id2{ std::max( cluster_id1, cluster_id2 ) }
-	{}
+Cluster_id_t::Cluster_id_t(int cluster_id1, int cluster_id2):
+    cluster_id1(std::min(cluster_id1, cluster_id2)),
+    cluster_id2(std::max(cluster_id1, cluster_id2))
+{}
+
+LayeredHistos::LayeredHistos(size_t size, std::string nameStart, std::string titleStart, size_t bins, double minX, double maxX):
+    size(size),
+    nameStart(std::move(nameStart)),
+    titleStart(std::move(titleStart)),
+    bins(bins),
+    minX(minX),
+    maxX(maxX)
+{
+    histArray = new TH1F*[size];
+    initLayeredHistos();
+}
+
+LayeredHistos::~LayeredHistos() {
+    for(int i = 0; i < size; ++i)
+        delete histArray[i];
+    delete[] histArray;
+}
+
+TH1F &LayeredHistos::operator[](size_t layer) const {
+    return *(histArray[layer]);
+}
+
+void LayeredHistos::initLayeredHistos() {
+    histArray = new TH1F*[size];
+
+    for(int i = 0; i < size; ++i) {
+        std::string name(nameStart), title(titleStart);
+        name.append(std::to_string(i));
+        title.append(std::to_string(i));
+
+        histArray[i] = new TH1F(name.c_str(), title.c_str(), bins, minX, maxX);
+    }
+}
 
 }
+
 #endif // SIM_DATA_H
