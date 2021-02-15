@@ -95,7 +95,7 @@ void selectPhotons(const std::string &inFileName, const std::string &outFileName
                     auto &layeredClosestCluster = layeredClosestClusterIt[cluster.layer]->second;
                     auto &layeredClosestPhi = layeredClosestPhiIt[cluster.layer]->second;
                     auto &layeredClosestTheta = layeredClosestThetaIt[cluster.layer]->second;
-                    
+
                     // Overall
                     if (angularDistance(cluster, photon) < angularDistance(closestCluster, photon))
                         closestClusterIt = it;
