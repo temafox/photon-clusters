@@ -16,10 +16,7 @@
 
 namespace cluster_div {
 
-void selectPhotons(
-    const std::string &inFileName = IN_FILE_NAME,
-    const std::string &outFileName = OUT_FILE_NAME
-);
+void selectPhotons(const std::string &inFileName = IN_FILE_NAME, const std::string &outFileName = OUT_FILE_NAME);
 
 const ClusterMap *findClusterCenters(const gera_nm::strip_data &strips, const gera_nm::cross_data &cross_pos);
 
@@ -239,6 +236,6 @@ const ClusterMap *findClusterCenters(const gera_nm::strip_data &strips, const ge
 
 }
 
-void selectPhotons(const std::string &inFileName, const std::string &outFileName) {
+void selectPhotons(const std::string &inFileName = IN_FILE_NAME, const std::string &outFileName = OUT_FILE_NAME) {
     cluster_div::selectPhotons( inFileName, outFileName );
 }
