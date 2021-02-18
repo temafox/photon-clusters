@@ -1,0 +1,6 @@
+#ifndef CLUSTER_DIV_CONFIG_H
+#define CLUSTER_DIV_CONFIG_H
+
+#define CUT_NENTRIES nEntries = 100;
+
+#endif // CLUSTER_DIV_CONFIG_H

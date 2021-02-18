@@ -88,14 +88,14 @@ public:
     int layer;
     double cphi;
     double ctheta;
-    int numPhotons;
+    std::vector<Photon> photons;
 
     Cluster();
 };
 
 typedef std::map<Cluster_id_t, Cluster> ClusterMap;
 
-class LayeredHistos {
+class MultipleHistos {
 public:
     TH1F **histArray;
     size_t size;
@@ -105,12 +105,12 @@ public:
     double minX;
     double maxX;
 
-    LayeredHistos(size_t size, std::string nameStart, std::string titleStart, size_t bins, double minX, double maxX);
-    ~LayeredHistos();
+    MultipleHistos(size_t size, std::string nameStart, std::string titleStart, size_t bins, double minX, double maxX);
+    ~MultipleHistos();
 
     TH1F &operator[](size_t layer) const;
 private:
-    void initLayeredHistos();
+    void initMultipleHistos();
 };
 
 }
@@ -139,7 +139,7 @@ Photon::Photon(const gera_nm::tree_data &event, size_t index):
 Cluster::Cluster():
     cphi(0.),
     ctheta(0.),
-    numPhotons(0)
+    photons(std::vector<Photon>())
 {}
 
 Cluster_id_t::Cluster_id_t(int cluster_id1, int cluster_id2):
@@ -147,7 +147,7 @@ Cluster_id_t::Cluster_id_t(int cluster_id1, int cluster_id2):
     cluster_id2(std::max(cluster_id1, cluster_id2))
 {}
 
-LayeredHistos::LayeredHistos(size_t size, std::string nameStart, std::string titleStart, size_t bins, double minX, double maxX):
+MultipleHistos::MultipleHistos(size_t size, std::string nameStart, std::string titleStart, size_t bins, double minX, double maxX):
     size(size),
     nameStart(std::move(nameStart)),
     titleStart(std::move(titleStart)),
@@ -156,20 +156,20 @@ LayeredHistos::LayeredHistos(size_t size, std::string nameStart, std::string tit
     maxX(maxX)
 {
     histArray = new TH1F*[size];
-    initLayeredHistos();
+    initMultipleHistos();
 }
 
-LayeredHistos::~LayeredHistos() {
+MultipleHistos::~MultipleHistos() {
     for (int i = 0; i < size; ++i)
         delete histArray[i];
     delete[] histArray;
 }
 
-TH1F &LayeredHistos::operator[](size_t layer) const {
+TH1F &MultipleHistos::operator[](size_t layer) const {
     return *(histArray[layer]);
 }
 
-void LayeredHistos::initLayeredHistos() {
+void MultipleHistos::initMultipleHistos() {
     histArray = new TH1F*[size];
 
     for (int i = 0; i < size; ++i) {
