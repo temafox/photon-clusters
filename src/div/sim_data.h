@@ -88,6 +88,7 @@ public:
     int layer;
     double cphi;
     double ctheta;
+    int hitNumber;
     std::vector<Photon> photons;
 
     Cluster();
@@ -139,6 +140,7 @@ Photon::Photon(const gera_nm::tree_data &event, size_t index):
 Cluster::Cluster():
     cphi(0.),
     ctheta(0.),
+    hitNumber(0),
     photons(std::vector<Photon>())
 {}
 

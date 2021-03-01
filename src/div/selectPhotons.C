@@ -12,9 +12,6 @@
 #include "functions.h"
 #include "cluster_div_config.h"
 
-#define IN_FILE_NAME "/store25/semenov/strips_run039799.root"
-#define OUT_FILE_NAME "/store25/bazhenov/piph.root"
-
 namespace cluster_div {
 
 void selectPhotons(const std::string &inFileName = IN_FILE_NAME, const std::string &outFileName = OUT_FILE_NAME) {
@@ -53,7 +50,7 @@ void selectPhotons(const std::string &inFileName = IN_FILE_NAME, const std::stri
     TH1F *piPhi = new TH1F("piPhi", "pi_simphi", 140, 0, 2. * TMath::Pi());
 
     // Process events
-    CUT_NENTRIES;
+    CUT_NENTRIES(100);
     std::cout << "nEntries = " << nEntries << std::endl;
     for (Long64_t entryIndex = 0; entryIndex < nEntries; ++entryIndex) {
         inTree->GetEntry(entryIndex);

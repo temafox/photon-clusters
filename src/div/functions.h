@@ -84,6 +84,7 @@ ClusterMap *findClusterCenters(const gera_nm::strip_data &strips, const gera_nm:
         run_it->second.y += cross_pos.y[cross_i];
         run_it->second.z += cross_pos.z[cross_i];
         run_it->second.size += 1;
+        cl_it->second.hitNumber += 1;
     }
 
     auto cl_it = clusters->begin();
