@@ -42,15 +42,16 @@ void selectPhotons(const std::string &inFileName = IN_FILE_NAME, const std::stri
     TH1F *angDist = new TH1F("angDist", "Angular distance to closest cluster", 70, 0, TMath::Pi());
 
     MultipleHistos angleLayeredHistos(LAYERS, "angDist", "Angular distance at layer ", 70, 0, TMath::Pi());
-    MultipleHistos phiLayeredHistos(LAYERS, "phiDist", "Difference for phi at layer ", 140, 0, 2. * TMath::Pi());
+    MultipleHistos phiLayeredHistos(LAYERS, "phiDist", "Difference for phi at layer ", 140, 0, TMath::Pi());
     MultipleHistos thetaLayeredHistos(LAYERS, "thetaDist", "Difference for theta at layer ", 70, 0, TMath::Pi());
 
-    // Angular distributions of pions
+    // Angular and energy distributions of pions
     TH1F *piTheta = new TH1F("piTheta", "pi_simtheta", 70, 0, TMath::Pi());
     TH1F *piPhi = new TH1F("piPhi", "pi_simphi", 140, 0, 2. * TMath::Pi());
+    TH1F *piEnergy = new TH1F("piEnergy", "pi_energy", 70, PI_ENERGY_MIN, PI_ENERGY_MAX);
 
     // Process events
-    CUT_NENTRIES(100);
+    //CUT_NENTRIES(100);
     std::cout << "nEntries = " << nEntries << std::endl;
     for (Long64_t entryIndex = 0; entryIndex < nEntries; ++entryIndex) {
         inTree->GetEntry(entryIndex);
@@ -93,7 +94,7 @@ void selectPhotons(const std::string &inFileName = IN_FILE_NAME, const std::stri
 
                     if (layeredClosestPhiIt[cluster.layer] == clusters->cend())
                         layeredClosestPhiIt[cluster.layer] = it;
-                    else if (std::fabs(cluster.cphi - photon.simphi) < std::fabs(layeredClosestPhi.cphi - photon.simphi))
+                    else if (phiDistance(cluster.cphi, photon.simphi) < phiDistance(layeredClosestPhi.cphi, photon.simphi))
                         layeredClosestPhiIt[cluster.layer] = it;
 
                     if (layeredClosestThetaIt[cluster.layer] == clusters->cend())
@@ -121,7 +122,7 @@ void selectPhotons(const std::string &inFileName = IN_FILE_NAME, const std::stri
                     if (layeredClosestPhiIt[k] == clusters->cend())
                         continue;
 
-                    double phiDiffValueLayer = std::fabs(layeredClosestPhiIt[k]->second.cphi - photon.simphi);
+                    double phiDiffValueLayer = phiDistance(layeredClosestPhiIt[k]->second.cphi, photon.simphi);
                     phiLayeredHistos[k].Fill(phiDiffValueLayer);
                 }
                 for (int k = 0; k < LAYERS; ++k) {
@@ -137,6 +138,7 @@ void selectPhotons(const std::string &inFileName = IN_FILE_NAME, const std::stri
             if (event.simtype[particleIndex] == PION) {
                 piTheta->Fill(event.simtheta[particleIndex]);
                 piPhi->Fill(event.simphi[particleIndex]);
+                piEnergy->Fill(energy(PI_MC2, event.simmom[particleIndex]));
             }
         }
     }
@@ -154,6 +156,7 @@ void selectPhotons(const std::string &inFileName = IN_FILE_NAME, const std::stri
         thetaLayeredHistos[i].Write();
     piTheta->Write();
     piPhi->Write();
+    piEnergy->Write();
 }
 
 }

@@ -91,6 +91,9 @@ public:
     int hitNumber;
     std::vector<Photon> photons;
 
+    int eventIndex;
+    int pionParticleIndex;
+
     Cluster();
 };
 
@@ -141,7 +144,9 @@ Cluster::Cluster():
     cphi(0.),
     ctheta(0.),
     hitNumber(0),
-    photons(std::vector<Photon>())
+    photons(std::vector<Photon>()),
+    eventIndex(0),
+    pionParticleIndex(0)
 {}
 
 Cluster_id_t::Cluster_id_t(int cluster_id1, int cluster_id2):

@@ -2,12 +2,19 @@
 #define FUNCTIONS_H
 
 #include <vector>
-#include "sim_data.h"
+#include <cmath>
+#include "sim_data.h" 
 
 template <typename T>
 size_t findIndex(const std::vector<T> &vector, const T &element);
 
+template <typename T>
+size_t findIndex(const T *array, size_t size, const T &element);
+
 double angularDistance(const cluster_div::Cluster &cluster, const cluster_div::Photon &photon);
+double phiDistance(double phi1, double phi2);
+
+double energy(double mc2, double pc);
 
 namespace cluster_div {
 ClusterMap *findClusterCenters(const gera_nm::strip_data &strips, const gera_nm::cross_data &cross_pos);
@@ -26,6 +33,15 @@ size_t findIndex(const std::vector<T> &vector, const T &element) {
     return elementIterator - begin;
 }
 
+template <typename T>
+size_t findIndex(const T *array, size_t size, const T &element) {
+    for (size_t i = 0; i < size; ++i) {
+        if (array[i] == element)
+            return i;
+    }
+    return -1;
+}
+
 double angularDistance(const cluster_div::Cluster &cluster, const cluster_div::Photon &photon) {
     double clusterPhi = cluster.cphi;
     double clusterTheta = cluster.ctheta;
@@ -35,6 +51,15 @@ double angularDistance(const cluster_div::Cluster &cluster, const cluster_div::P
     double angle = std::acos(std::cos(clusterTheta) * std::cos(photonTheta)
         + std::sin(clusterTheta) * std::sin(photonTheta) * std::cos(clusterPhi - photonPhi));
     return angle;
+}
+
+double phiDistance(double phi1, double phi2) {
+    double diff = std::fabs(phi2 - phi1);
+    return (diff > M_PI) ? (2. * M_PI - diff) : diff;
+}
+
+double energy(double mc2, double pc) {
+    return std::sqrt(mc2 * mc2 + pc * pc);
 }
 
 namespace cluster_div {
