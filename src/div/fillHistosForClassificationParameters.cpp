@@ -2,11 +2,10 @@
 #include <TFile.h>
 #include <TTree.h>
 #include <TMath.h>
+#include <TCanvas.h>
 
 #include <algorithm>
-#include <cmath>
 #include <iostream>
-#include <utility>
 
 #include "sim_data.h"
 #include "functions.h"
@@ -39,10 +38,10 @@ void fillHistosForClassificationParameters(const std::string &inFileName = IN_FI
 
     // Parameters
     const double maxAngularDistance = TMath::Pi();
-    MultipleHistos *p_hitNumber = new MultipleHistos(2, "hitNumber", "Number of hits on layer: photons 1+", 25, 0, 300);
-    MultipleHistos *p_distanceFromClusterAxis = new MultipleHistos(2, "distanceFromClusterAxis", "Distance from cluster axis on layer: photons 1+", 25, 0, maxAngularDistance);
-    MultipleHistos *p_pionEnergy = new MultipleHistos(2, "pionEnergy", "Energy of the original pion", 20, 700, 750);
-    MultipleHistos &hitNumber = *p_hitNumber, &distanceFromClusterAxis = *p_distanceFromClusterAxis, &pionEnergy = *p_pionEnergy;
+    auto *p_hitNumber = new MultipleHistos(2, "hitNumber", "Number of hits on layer: photons 1+", 25, 0, 300);
+    auto *p_distanceFromClusterAxis = new MultipleHistos(2, "distanceFromClusterAxis", "Distance from cluster axis on layer: photons 1+", 25, 0, maxAngularDistance);
+    auto *p_pionEnergy = new MultipleHistos(2, "pionEnergy", "Energy of the original pion", 20, PI_ENERGY_MIN, PI_ENERGY_MAX);
+    auto &hitNumber = *p_hitNumber, &distanceFromClusterAxis = *p_distanceFromClusterAxis, &pionEnergy = *p_pionEnergy;
 
     // Process events
     //CUT_NENTRIES(1000);
@@ -78,21 +77,23 @@ void fillHistosForClassificationParameters(const std::string &inFileName = IN_FI
             }
         }
 
-        for (auto clusterIt = clusters->cbegin(); clusterIt != clusters->cend(); ++clusterIt) {
-            if (clusterIt->second.photons.size() == 0)
+        for (const auto &clusterKvp : *clusters) {
+            auto &cluster = clusterKvp.second;
+            
+            if (cluster.photons.empty())
                 continue;
-            else if (clusterIt->second.photons.size() == 1) {
-                distanceFromClusterAxis[0].Fill(angularDistance(clusterIt->second, clusterIt->second.photons[0]));
-                hitNumber[0].Fill(clusterIt->second.hitNumber);
+            else if (cluster.photons.size() == 1) {
+                distanceFromClusterAxis[0].Fill(angularDistance(cluster, cluster.photons[0]));
+                hitNumber[0].Fill(cluster.hitNumber);
 
-                inTree->GetEntry(clusterIt->second.eventIndex);
-                pionEnergy[0].Fill(energy(PI_MC2, event.simmom[clusterIt->second.pionParticleIndex]));
+                inTree->GetEntry(cluster.eventIndex);
+                pionEnergy[0].Fill(energy(PI_MC2, event.simmom[cluster.pionParticleIndex]));
             } else {
-                distanceFromClusterAxis[1].Fill(std::max(angularDistance(clusterIt->second, clusterIt->second.photons[0]), angularDistance(clusterIt->second, clusterIt->second.photons[1])));
-                hitNumber[1].Fill(clusterIt->second.hitNumber);
+                distanceFromClusterAxis[1].Fill(std::max(angularDistance(cluster, cluster.photons[0]), angularDistance(cluster, cluster.photons[1])));
+                hitNumber[1].Fill(cluster.hitNumber);
 
-                inTree->GetEntry(clusterIt->second.eventIndex);
-                pionEnergy[1].Fill(energy(PI_MC2, event.simmom[clusterIt->second.pionParticleIndex]));
+                inTree->GetEntry(cluster.eventIndex);
+                pionEnergy[1].Fill(energy(PI_MC2, event.simmom[cluster.pionParticleIndex]));
             }
         }
     }
@@ -103,14 +104,14 @@ void fillHistosForClassificationParameters(const std::string &inFileName = IN_FI
     std::cout << "\nHit number 1ph: " << hitNumber[0].GetEntries() << std::endl;
     std::cout << "Hit number 2ph: " << hitNumber[1].GetEntries() << std::endl;
 
-    TCanvas *c1 = new TCanvas();
+    auto *c1 = new TCanvas();
     distanceFromClusterAxis[1].SetLineColor(kRed);
     distanceFromClusterAxis[0].Draw();
     distanceFromClusterAxis[1].Draw("same");
     c1->SetLogy();
     c1->Print("histos/distanceFromClusterAxis.png");
 
-    TCanvas *c2 = new TCanvas();
+    auto *c2 = new TCanvas();
     hitNumber[1].SetLineColor(kRed);
     hitNumber[0].Draw();
     hitNumber[1].Draw("same");
@@ -118,7 +119,7 @@ void fillHistosForClassificationParameters(const std::string &inFileName = IN_FI
     c2->Print("histos/hitNumber.png");
 
     // Write histograms
-    auto histoFile = new TFile("histos/classpar.root", "recreate");
+    auto histoFile = new TFile(OUT_FILE_NAME, "recreate");
     for (int i = 0; i < 2; ++i) {
         hitNumber[i].Write();
         distanceFromClusterAxis[i].Write();
