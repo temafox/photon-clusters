@@ -52,7 +52,15 @@ struct tree_data {
 
 namespace cluster_div {
 
-class Photon {
+class Angular {
+public:
+    virtual ~Angular() = default;
+
+    virtual double getPhi() const noexcept = 0;
+    virtual double getTheta() const noexcept = 0;
+};
+
+class Photon : public Angular {
 public:
     static int totalPhotonNumber;
     int photonID;
@@ -70,6 +78,9 @@ public:
 
     Photon();
     Photon(const gera_nm::tree_data &, size_t index);
+
+    double getPhi() const noexcept override { return simphi; }
+    double getTheta() const noexcept override { return simtheta; }
 };
 
 class Cluster_id_t {
@@ -83,7 +94,7 @@ public:
     }
 };
 
-class Cluster {
+class Cluster : public Angular {
 public:
     int layer;
     double cphi;
@@ -95,6 +106,9 @@ public:
     int pionParticleIndex;
 
     Cluster();
+
+    double getPhi() const noexcept override { return cphi; }
+    double getTheta() const noexcept override { return ctheta; }
 };
 
 typedef std::map<Cluster_id_t, Cluster> ClusterMap;
@@ -126,10 +140,19 @@ namespace cluster_div {
 int Photon::totalPhotonNumber = 0;
 
 Photon::Photon():
-    photonID(totalPhotonNumber++)
+    photonID(totalPhotonNumber++),
+    simtype(PHOTON),
+    simorig(0),
+    simmom(0),
+    simphi(0),
+    simtheta(0),
+    simvtx(0),
+    simvty(0),
+    simvtz(0)
 {}
 
 Photon::Photon(const gera_nm::tree_data &event, size_t index):
+    photonID(totalPhotonNumber++),
     simtype(event.simtype[index]),
     simorig(event.simorig[index]),
     simmom(event.simmom[index]),
@@ -141,6 +164,7 @@ Photon::Photon(const gera_nm::tree_data &event, size_t index):
 {}
 
 Cluster::Cluster():
+    layer(0),
     cphi(0.),
     ctheta(0.),
     hitNumber(0),

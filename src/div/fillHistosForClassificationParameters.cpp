@@ -13,6 +13,18 @@
 
 namespace cluster_div {
 
+void drawAndSaveTwoHistos(MultipleHistos &histoArray, const char *fileName) {
+    auto *c = new TCanvas();
+
+    histoArray[1].SetLineColor(kRed);
+    histoArray[0].Draw();
+    histoArray[1].Draw("same");
+
+    c->SetLogy();
+
+    c->Print(fileName);
+}
+
 void fillHistosForClassificationParameters(const std::string &inFileName = IN_FILE_NAME, const std::string &outFileName = OUT_FILE_NAME) {
     // Initialize inputs
     auto inFile = new TFile(inFileName.c_str());
@@ -39,9 +51,19 @@ void fillHistosForClassificationParameters(const std::string &inFileName = IN_FI
     // Parameters
     const double maxAngularDistance = TMath::Pi();
     auto *p_hitNumber = new MultipleHistos(2, "hitNumber", "Number of hits on layer: photons 1+", 25, 0, 300);
+    auto &hitNumber = *p_hitNumber;
+
     auto *p_distanceFromClusterAxis = new MultipleHistos(2, "distanceFromClusterAxis", "Distance from cluster axis on layer: photons 1+", 25, 0, maxAngularDistance);
-    auto *p_pionEnergy = new MultipleHistos(2, "pionEnergy", "Energy of the original pion", 20, PI_ENERGY_MIN, PI_ENERGY_MAX);
-    auto &hitNumber = *p_hitNumber, &distanceFromClusterAxis = *p_distanceFromClusterAxis, &pionEnergy = *p_pionEnergy;
+    auto &distanceFromClusterAxis = *p_distanceFromClusterAxis;
+
+    auto *p_clusterArea = new MultipleHistos(2, "clusterArea", "Area of cluster on layer 6: photons 1+", 20, 0, 100);
+    auto &clusterArea = *p_clusterArea;
+
+    auto *p_clusterCenterDisplacement = new MultipleHistos(2, "clusterCenterDisplacement", "Displacement of cluster center relative to previous layer: photons 1+", 20, 0, 100);
+    auto &clusterCenterDisplacement = *p_clusterCenterDisplacement;
+
+    auto *p_pionEnergy = new MultipleHistos(2, "pionEnergy", "Energy of the original pion: photons 1+", 20, PI_ENERGY_MIN, PI_ENERGY_MAX);
+    auto &pionEnergy = *p_pionEnergy;
 
     // Process events
     //CUT_NENTRIES(1000);
@@ -86,14 +108,26 @@ void fillHistosForClassificationParameters(const std::string &inFileName = IN_FI
                 distanceFromClusterAxis[0].Fill(angularDistance(cluster, cluster.photons[0]));
                 hitNumber[0].Fill(cluster.hitNumber);
 
+                if (cluster.layer > 0) {
+                    clusterCenterDisplacement[0].Fill(0);//angularDistance(cluster, prevCluster));
+                }
+
                 inTree->GetEntry(cluster.eventIndex);
                 pionEnergy[0].Fill(energy(PI_MC2, event.simmom[cluster.pionParticleIndex]));
+
+                clusterArea[0].Fill(0);
             } else {
                 distanceFromClusterAxis[1].Fill(std::max(angularDistance(cluster, cluster.photons[0]), angularDistance(cluster, cluster.photons[1])));
                 hitNumber[1].Fill(cluster.hitNumber);
 
+                if (cluster.layer > 0) {
+                    clusterCenterDisplacement[1].Fill(0);//angularDistance(cluster, prevCluster));
+                }
+
                 inTree->GetEntry(cluster.eventIndex);
                 pionEnergy[1].Fill(energy(PI_MC2, event.simmom[cluster.pionParticleIndex]));
+
+                clusterArea[1].Fill(0);
             }
         }
     }
@@ -104,25 +138,18 @@ void fillHistosForClassificationParameters(const std::string &inFileName = IN_FI
     std::cout << "\nHit number 1ph: " << hitNumber[0].GetEntries() << std::endl;
     std::cout << "Hit number 2ph: " << hitNumber[1].GetEntries() << std::endl;
 
-    auto *c1 = new TCanvas();
-    distanceFromClusterAxis[1].SetLineColor(kRed);
-    distanceFromClusterAxis[0].Draw();
-    distanceFromClusterAxis[1].Draw("same");
-    c1->SetLogy();
-    c1->Print("histos/distanceFromClusterAxis.png");
-
-    auto *c2 = new TCanvas();
-    hitNumber[1].SetLineColor(kRed);
-    hitNumber[0].Draw();
-    hitNumber[1].Draw("same");
-    c2->SetLogy();
-    c2->Print("histos/hitNumber.png");
+    drawAndSaveTwoHistos(distanceFromClusterAxis, "histos/distanceFromClusterAxis.png");
+    drawAndSaveTwoHistos(hitNumber, "histos/hitNumber.png");
+    drawAndSaveTwoHistos(clusterCenterDisplacement, "histos/clusterCenterDisplacement.png");
+    drawAndSaveTwoHistos(clusterArea, "histos/clusterArea.png");
 
     // Write histograms
     auto histoFile = new TFile(OUT_FILE_NAME, "recreate");
     for (int i = 0; i < 2; ++i) {
         hitNumber[i].Write();
         distanceFromClusterAxis[i].Write();
+        clusterCenterDisplacement[i].Write();
+        clusterArea[i].Write();
         pionEnergy[i].Write();
     }
 }

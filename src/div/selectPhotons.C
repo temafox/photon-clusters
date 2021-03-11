@@ -6,7 +6,6 @@
 #include <algorithm>
 #include <cmath>
 #include <iostream>
-#include <utility>
 
 #include "sim_data.h"
 #include "functions.h"

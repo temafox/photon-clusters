@@ -11,7 +11,7 @@ size_t findIndex(const std::vector<T> &vector, const T &element);
 template <typename T>
 size_t findIndex(const T *array, size_t size, const T &element);
 
-double angularDistance(const cluster_div::Cluster &cluster, const cluster_div::Photon &photon);
+double angularDistance(const cluster_div::Angular &ang1, const cluster_div::Angular &ang2);
 double phiDistance(double phi1, double phi2);
 
 double energy(double mc2, double pc);
@@ -42,14 +42,14 @@ size_t findIndex(const T *array, size_t size, const T &element) {
     return -1;
 }
 
-double angularDistance(const cluster_div::Cluster &cluster, const cluster_div::Photon &photon) {
-    double clusterPhi = cluster.cphi;
-    double clusterTheta = cluster.ctheta;
-    double photonPhi = photon.simphi;
-    double photonTheta = photon.simtheta;
+double angularDistance(const cluster_div::Angular &ang1, const cluster_div::Angular &ang2) {
+    double phi1 = ang1.getPhi();
+    double theta1 = ang1.getTheta();
+    double phi2 = ang2.getPhi();
+    double theta2 = ang2.getTheta();
 
-    double angle = std::acos(std::cos(clusterTheta) * std::cos(photonTheta)
-        + std::sin(clusterTheta) * std::sin(photonTheta) * std::cos(clusterPhi - photonPhi));
+    double angle = std::acos(std::cos(theta1) * std::cos(theta2)
+        + std::sin(theta1) * std::sin(theta2) * std::cos(phi1 - phi2));
     return angle;
 }
 
