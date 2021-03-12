@@ -5,3 +5,4 @@ src/div/histos.root
 src/div/histos/
 /cmake-build-debug/
 /CMakeLists.txt
+.idea/
