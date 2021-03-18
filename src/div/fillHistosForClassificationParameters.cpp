@@ -17,8 +17,8 @@ namespace cluster_div {
 void drawAndSaveTwoHistos(MultipleHistos &histoArray, const char *fileName) {
     auto *c = new TCanvas();
 
-    histoArray[0].Scale(1);
-    histoArray[1].Scale(1);
+    histoArray[0].Scale(1./histoArray[0].GetEntries());
+    histoArray[1].Scale(1./histoArray[1].GetEntries());
     histoArray[1].SetLineColor(kRed);
     histoArray[0].Draw();
     histoArray[1].Draw("same");
@@ -28,9 +28,18 @@ void drawAndSaveTwoHistos(MultipleHistos &histoArray, const char *fileName) {
     c->Print(fileName);
 }
 
-std::vector< std::list<Cluster_id_t> > findClusterChains(const ClusterMap &clusters, double maxAngularDistance) {
-    std::vector< std::list<Cluster_id_t> > res;
-    res.push_back(std::list<Cluster_id_t>());
+std::list<Cluster_id_t> findClusterChains(const ClusterMap &clusters, double maxAngularDistance) {
+    std::list<Cluster_id_t> res;
+
+    for (auto it : clusters) {
+        if (!res.empty()) {
+            if ((it->second.layer > clusters[res.back()].layer) &&
+                    (angularDistance(it->second, clusters[res.back()]) < maxAngularDistance))
+                res.push_back(it->first);
+        } else {
+            ;
+        }
+    }
 
     return res;
 }
