@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <list>
 
 #include "sim_data.h"
 #include "functions.h"
@@ -16,6 +17,8 @@ namespace cluster_div {
 void drawAndSaveTwoHistos(MultipleHistos &histoArray, const char *fileName) {
     auto *c = new TCanvas();
 
+    histoArray[0].Scale(1);
+    histoArray[1].Scale(1);
     histoArray[1].SetLineColor(kRed);
     histoArray[0].Draw();
     histoArray[1].Draw("same");
@@ -23,6 +26,13 @@ void drawAndSaveTwoHistos(MultipleHistos &histoArray, const char *fileName) {
     c->SetLogy();
 
     c->Print(fileName);
+}
+
+std::vector< std::list<Cluster_id_t> > findClusterChains(const ClusterMap &clusters, double maxAngularDistance) {
+    std::vector< std::list<Cluster_id_t> > res;
+    res.push_back(std::list<Cluster_id_t>());
+
+    return res;
 }
 
 void fillHistosForClassificationParameters(const std::string &inFileName = IN_FILE_NAME, const std::string &outFileName = OUT_FILE_NAME) {
@@ -72,6 +82,7 @@ void fillHistosForClassificationParameters(const std::string &inFileName = IN_FI
         inTree->GetEntry(entryIndex);
 
         ClusterMap *clusters = findClusterCenters(*strips, *cross_pos);
+        std::vector< std::list<Cluster_id_t> > clusterChains = findClusterChains(*clusters, maxAngularDistance);
 
         for (int particleIndex = 0; particleIndex < event.nsim; ++particleIndex) {
             // pi0 -> _2gamma_
