@@ -1,0 +1,10 @@
+#ifndef CLUSTER_DIV_CLUSTERPARSER_H
+#define CLUSTER_DIV_CLUSTERPARSER_H
+
+
+class ClusterParser {
+
+};
+
+
+#endif //CLUSTER_DIV_CLUSTERPARSER_H

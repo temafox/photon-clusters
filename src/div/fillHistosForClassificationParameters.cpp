@@ -31,11 +31,11 @@ void drawAndSaveTwoHistos(MultipleHistos &histoArray, const char *fileName) {
 std::list<Cluster_id_t> findClusterChains(const ClusterMap &clusters, double maxAngularDistance) {
     std::list<Cluster_id_t> res;
 
-    for (auto it : clusters) {
+    for (const auto it : clusters) {
         if (!res.empty()) {
-            if ((it->second.layer > clusters[res.back()].layer) &&
-                    (angularDistance(it->second, clusters[res.back()]) < maxAngularDistance))
-                res.push_back(it->first);
+            if ((it.second.layer > clusters[res.back()].layer) &&
+                    (angularDistance(it.second, clusters[res.back()]) < maxAngularDistance))
+                res.push_back(it.first);
         } else {
             ;
         }
@@ -91,7 +91,7 @@ void fillHistosForClassificationParameters(const std::string &inFileName = IN_FI
         inTree->GetEntry(entryIndex);
 
         ClusterMap *clusters = findClusterCenters(*strips, *cross_pos);
-        std::vector< std::list<Cluster_id_t> > clusterChains = findClusterChains(*clusters, maxAngularDistance);
+        std::list<Cluster_id_t> clusterChains = findClusterChains(*clusters, maxAngularDistance);
 
         for (int particleIndex = 0; particleIndex < event.nsim; ++particleIndex) {
             // pi0 -> _2gamma_
