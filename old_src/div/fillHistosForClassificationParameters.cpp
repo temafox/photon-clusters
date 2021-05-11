@@ -8,9 +8,9 @@
 #include <iostream>
 #include <list>
 
-#include "sim_data.h"
-#include "functions.h"
-#include "cluster_div_config.h"
+#include "../../div/src/base/simData.h"
+#include "../../div/src/base/functions.h"
+#include "../../div/src/base/config.h"
 
 namespace cluster_div {
 

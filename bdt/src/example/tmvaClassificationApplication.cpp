@@ -52,12 +52,12 @@ void tmvaClassificationApplication( TString infilename = "data/data.root", TStri
 	if( !gSystem->AccessPathName( ifname ) ) {
 		inputFile = TFile::Open( ifname );
 	} else {
-		std::cerr << "ERROR: in src/algorithm/example/tmvaApplication.cpp" << std::endl;
+		std::cerr << "ERROR: in old_src/algorithm/example/tmvaApplication.cpp" << std::endl;
 		std::cerr << "*** Input file " << ifname << " not found" << std::endl;
 		exit(1);
 	}
 	if( !inputFile ) {
-		std::cerr << "ERROR: in src/algorithm/example/tmvaApplication.cpp" << std::endl;
+		std::cerr << "ERROR: in old_src/algorithm/example/tmvaApplication.cpp" << std::endl;
 		std::cerr << "*** Could not open input file " << ifname << std::endl;
 		exit(1);
 	}
